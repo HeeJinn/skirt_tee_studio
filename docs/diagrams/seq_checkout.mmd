@@ -1,0 +1,45 @@
+sequenceDiagram
+autonumber
+actor C as Cashier
+participant POS as PosScreen
+participant TD as CashTenderDialog
+participant Cart as CartViewModel
+participant SR as SaleRepositoryImpl
+participant DS as SaleLocalDataSource
+participant DB as SQLite
+participant Inv as InventoryViewModel
+participant Ses as SessionViewModel
+
+C->>POS: tap item tiles
+POS->>Cart: addItem(item)
+Note right of Cart: capped at qtyOnHand
+C->>POS: choose payment method
+alt method == Cash
+  POS->>TD: showCashTenderDialog(total)
+  C->>TD: enter / tap amount received
+  TD->>TD: coversTotal(), changeDue()
+  TD-->>POS: amountTendered
+end
+POS->>Cart: checkout(method, amountTendered)
+Cart->>Cart: build Sale + SaleLineItems
+Cart->>SR: recordSale(sale)
+SR->>DS: recordSale(SaleModel)
+activate DS
+DS->>DB: BEGIN TRANSACTION
+DS->>DB: INSERT sales
+loop each line item
+  DS->>DB: SELECT unitCost FROM items
+  DS->>DB: INSERT sale_line_items (with unitCost)
+  DS->>DB: UPDATE items SET qtyOnHand -= qty
+end
+DS->>DB: COMMIT
+deactivate DS
+Cart->>Cart: clear()
+Cart-->>POS: true
+par refresh
+  POS->>Inv: load()
+and
+  POS->>Ses: log("Sale ₱… · items · method")
+  Ses->>DB: INSERT audit_log
+end
+POS-->>C: "Sold" banner + change breakdown

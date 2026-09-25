@@ -1,0 +1,14 @@
+{
+  "name": "skirt-tee-studio-plugins",
+  "description": "Local Claude Code plugins for the skirt_tee_studio project.",
+  "owner": {
+    "name": "fpaulpalis"
+  },
+  "plugins": [
+    {
+      "name": "modern-ui-design",
+      "source": "./modern-ui-design",
+      "description": "Skill for crafting modern, distinctive Flutter UI/UX that avoids the generic 'AI-generated' look."
+    }
+  ]
+}

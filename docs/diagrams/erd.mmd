@@ -1,0 +1,91 @@
+erDiagram
+    items {
+        TEXT id PK
+        TEXT name
+        TEXT category
+        REAL unitPrice
+        INTEGER qtyOnHand
+        INTEGER isBargain
+        TEXT imagePath "nullable"
+        REAL unitCost "nullable, avg cost"
+    }
+    sales {
+        TEXT id PK
+        TEXT dateTime
+        TEXT paymentMethod "nullable"
+        REAL amountTendered "nullable"
+    }
+    sale_line_items {
+        INTEGER id PK "autoincrement"
+        TEXT saleId FK
+        TEXT itemId "ref items.id"
+        TEXT itemName "snapshot"
+        REAL unitPrice "snapshot"
+        INTEGER qty
+        REAL unitCost "cost at sale"
+    }
+    reservations {
+        TEXT id PK
+        TEXT customerName
+        TEXT contact
+        TEXT itemId "ref items.id"
+        TEXT itemName "snapshot"
+        TEXT pickupDate
+        TEXT status "pending or pickedUp"
+    }
+    stock_lots {
+        TEXT id PK
+        TEXT at
+        TEXT supplier
+        REAL itemsCost
+        REAL fees
+        TEXT paidFrom "shop or owners"
+        TEXT person "nullable"
+        TEXT note
+    }
+    stock_movements {
+        INTEGER id PK "autoincrement"
+        TEXT at
+        TEXT itemId "ref items.id"
+        TEXT itemName "snapshot"
+        TEXT type "received, writeOff, found"
+        INTEGER qty
+        REAL unitCost
+        TEXT reason "nullable"
+        TEXT lotId "ref stock_lots.id"
+        TEXT note
+    }
+    money_entries {
+        TEXT id PK
+        TEXT at
+        TEXT kind "capitalIn, expense, ownerDraw"
+        REAL amount
+        TEXT category "nullable"
+        TEXT paidFrom
+        TEXT person "nullable"
+        TEXT note
+    }
+    staff {
+        TEXT id PK
+        TEXT name
+        TEXT role "owner or cashier"
+        TEXT pinHash
+        TEXT salt
+    }
+    audit_log {
+        INTEGER id PK "autoincrement"
+        TEXT at
+        TEXT staffName "snapshot"
+        TEXT action
+    }
+    settings {
+        TEXT key PK
+        TEXT value
+    }
+
+    sales ||--|{ sale_line_items : "contains"
+    items ||..o{ sale_line_items : "sold as"
+    items ||..o{ reservations : "reserved in"
+    items ||..o{ stock_movements : "moved by"
+    stock_lots |o..o{ stock_movements : "received via"
+    staff ||..o{ audit_log : "performs"

@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "skirt-tee-studio-plugins": {
+      "source": {
+        "source": "directory",
+        "path": "C:\\Users\\knrib\\Flutter\\skirt_tee_studio\\claude-plugins"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "modern-ui-design@skirt-tee-studio-plugins": true
+  }
+}

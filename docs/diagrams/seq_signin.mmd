@@ -1,0 +1,36 @@
+sequenceDiagram
+autonumber
+actor U as Staff member
+participant App as SkirtAndTeeApp
+participant SI as SignInScreen
+participant Ses as SessionViewModel
+participant StR as StaffRepositoryImpl
+participant DB as SQLite
+participant Sh as AppShell
+
+App->>Ses: current == null?
+App->>SI: show sign-in
+alt no staff yet (first run)
+  U->>SI: name + new PIN
+  SI->>Ses: createFirstOwner(name, pin)
+  Ses->>StR: add(name, owner, pin)
+  StR->>StR: random salt, hashPin (10,000× SHA-256)
+  StR->>DB: INSERT staff
+else accounts exist
+  U->>SI: pick name, enter PIN
+  SI->>Ses: signIn(member, pin)
+  Ses->>StR: verifyPin(id, pin)
+  StR->>DB: SELECT pinHash, salt
+  StR-->>Ses: match?
+  alt wrong PIN
+    Ses-->>SI: false
+    SI-->>U: "Wrong PIN"
+  end
+end
+Ses->>DB: audit_log "Signed in"
+Ses-->>App: notifyListeners()
+App->>Sh: show shell (menu filtered by role)
+Note over Sh: Cashier sees POS, Inventory (read-only), Reservations
+U->>Sh: Lock
+Sh->>Ses: cart.clear(), signOut()
+Ses-->>App: back to SignInScreen

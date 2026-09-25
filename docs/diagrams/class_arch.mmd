@@ -1,0 +1,193 @@
+classDiagram
+direction TB
+class ChangeNotifier {
+  <<Flutter>>
+  +notifyListeners()
+}
+class CartViewModel {
+  -List~CartLine~ _lines
+  +total double
+  +addItem(Item)
+  +decrementItem(id)
+  +removeItem(id)
+  +clear()
+  +checkout(PaymentMethod, amountTendered) Future~bool~
+}
+class InventoryViewModel {
+  -List~Item~ _items
+  +load()
+  +addItem(Item)
+  +updateItem(Item)
+  +deleteItem(id)
+  +receiveLot(StockLot, lines, newItems)
+  +adjustStock(itemId, qty, reason)
+}
+class ReservationViewModel {
+  -List~Reservation~ _reservations
+  +load()
+  +addReservation(r)
+  +updateReservation(r)
+  +deleteReservation(id)
+  +completePickup(r, inventory, method)
+}
+class SalesViewModel {
+  -List~Sale~ _sales
+  +totalRevenue double
+  +load()
+  +voidSale(Sale)
+}
+class SessionViewModel {
+  -StaffMember? _current
+  +isOwner bool
+  +createFirstOwner(name, pin)
+  +signIn(member, pin) Future~bool~
+  +signOut()
+  +addStaff(name, role, pin)
+  +removeStaff(member)
+  +log(action)
+}
+class MoneyViewModel {
+  -List~MoneyEntry~ _entries
+  -List~StockLot~ _lots
+  -List~StockMovement~ _movements
+  +load()
+  +addEntry(e)
+  +updateEntry(e)
+  +deleteEntry(id)
+}
+class SettingsViewModel {
+  +lowStockThreshold int
+  +load()
+  +updateLowStockThreshold(int)
+}
+
+class ItemRepository {
+  <<interface>>
+  +getAll()
+  +add()
+  +update()
+  +delete()
+}
+class SaleRepository {
+  <<interface>>
+  +recordSale(Sale)
+  +getAll()
+  +voidSale(id)
+}
+class ReservationRepository {
+  <<interface>>
+  +getAll()
+  +add()
+  +update()
+  +delete()
+}
+class StaffRepository {
+  <<interface>>
+  +getAll()
+  +add()
+  +delete()
+  +verifyPin()
+  +log()
+  +recentActivity()
+}
+class StockRepository {
+  <<interface>>
+  +receiveLot()
+  +writeOff()
+  +markFound()
+  +removeItem()
+  +getLots()
+  +getMovements()
+}
+class MoneyRepository {
+  <<interface>>
+  +booksStartedAt()
+  +getAll()
+  +add()
+  +update()
+  +delete()
+}
+class SettingsRepository {
+  <<interface>>
+  +getLowStockThreshold()
+  +setLowStockThreshold()
+}
+
+class ItemRepositoryImpl
+class SaleRepositoryImpl
+class ReservationRepositoryImpl
+class StaffRepositoryImpl {
+  +hashPin(pin, salt)$ String
+}
+class StockRepositoryImpl
+class MoneyRepositoryImpl
+class SettingsRepositoryImpl
+
+class ItemLocalDataSource {
+  +getAll()
+  +insert()
+  +update()
+  +delete()
+}
+class SaleLocalDataSource {
+  +recordSale()
+  +getAll()
+  +voidSale()
+}
+class ReservationLocalDataSource {
+  +getAll()
+  +insert()
+  +update()
+  +delete()
+}
+class SettingsLocalDataSource {
+  +getLowStockThreshold()
+  +setLowStockThreshold()
+}
+class DatabaseService {
+  <<singleton>>
+  +schemaVersion int$
+  +database Future~Database~
+  +backupTo(path)
+  +createSchema(db)$
+  +upgradeSchema(db, oldVersion)$
+}
+
+ChangeNotifier <|-- CartViewModel
+ChangeNotifier <|-- InventoryViewModel
+ChangeNotifier <|-- ReservationViewModel
+ChangeNotifier <|-- SalesViewModel
+ChangeNotifier <|-- SessionViewModel
+ChangeNotifier <|-- MoneyViewModel
+ChangeNotifier <|-- SettingsViewModel
+
+CartViewModel --> SaleRepository
+InventoryViewModel --> ItemRepository
+InventoryViewModel --> StockRepository
+ReservationViewModel --> ReservationRepository
+ReservationViewModel --> SaleRepository
+SalesViewModel --> SaleRepository
+SessionViewModel --> StaffRepository
+MoneyViewModel --> MoneyRepository
+MoneyViewModel --> StockRepository
+SettingsViewModel --> SettingsRepository
+
+ItemRepository <|.. ItemRepositoryImpl
+SaleRepository <|.. SaleRepositoryImpl
+ReservationRepository <|.. ReservationRepositoryImpl
+StaffRepository <|.. StaffRepositoryImpl
+StockRepository <|.. StockRepositoryImpl
+MoneyRepository <|.. MoneyRepositoryImpl
+SettingsRepository <|.. SettingsRepositoryImpl
+
+ItemRepositoryImpl --> ItemLocalDataSource
+SaleRepositoryImpl --> SaleLocalDataSource
+ReservationRepositoryImpl --> ReservationLocalDataSource
+SettingsRepositoryImpl --> SettingsLocalDataSource
+ItemLocalDataSource --> DatabaseService
+SaleLocalDataSource --> DatabaseService
+ReservationLocalDataSource --> DatabaseService
+SettingsLocalDataSource --> DatabaseService
+StaffRepositoryImpl --> DatabaseService
+StockRepositoryImpl --> DatabaseService
+MoneyRepositoryImpl --> DatabaseService

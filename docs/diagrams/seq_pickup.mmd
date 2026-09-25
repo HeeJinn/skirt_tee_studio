@@ -1,0 +1,36 @@
+sequenceDiagram
+autonumber
+actor S as Staff
+participant RS as ReservationsScreen
+participant Inv as InventoryViewModel
+participant RVM as ReservationViewModel
+participant SR as SaleRepository
+participant RR as ReservationRepository
+participant DB as SQLite
+participant Ses as SessionViewModel
+
+S->>RS: Mark Picked Up
+RS-->>S: "Paid by" dialog
+S->>RS: choose payment method
+opt Cash
+  RS->>S: CashTenderDialog(item price)
+  S-->>RS: amount received
+end
+RS->>RVM: completePickup(reservation, Inv.items, method)
+RVM->>RVM: find reserved item in inventory
+alt item deleted or qtyOnHand < 1
+  RVM-->>RS: throw PickupBlockedException
+  RS-->>S: error snackbar (no stock change)
+else in stock
+  RVM->>SR: recordSale(Sale with 1 line)
+  SR->>DB: transaction: insert sale, deduct stock
+  RVM->>RR: update(status = pickedUp)
+  RR->>DB: UPDATE reservations
+  RVM->>RVM: load()
+  par
+    RS->>Inv: load()
+  and
+    RS->>Ses: log("Completed pickup (sale) …")
+  end
+  RS-->>S: row moves to Picked Up
+end

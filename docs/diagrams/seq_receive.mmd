@@ -1,0 +1,39 @@
+sequenceDiagram
+autonumber
+actor O as Owner
+participant IS as InventoryScreen
+participant RD as ReceiveStockDialog
+participant IVM as InventoryViewModel
+participant StR as StockRepositoryImpl
+participant Cost as costing.dart
+participant DB as SQLite
+participant Ses as SessionViewModel
+
+O->>IS: Receive stock
+IS->>RD: open(items, owner names)
+O->>RD: lot price, fees, supplier, paid from
+O->>RD: add pieces (existing or new items)
+RD->>Cost: allocateLotCost(total, lines)
+Cost-->>RD: cost per piece (preview profit)
+RD-->>IS: ReceivedLot(lot, lines, newItems)
+IS->>IVM: receiveLot(lot, lines, newItems)
+IVM->>StR: receiveLot(...)
+StR->>Cost: allocateLotCost(lot.totalCost, lines)
+activate StR
+StR->>DB: BEGIN TRANSACTION
+StR->>DB: INSERT new items (qty 0)
+StR->>DB: INSERT stock_lots
+loop each lot line
+  StR->>DB: SELECT qtyOnHand, unitCost
+  StR->>Cost: blendUnitCost(onHand, current, added)
+  StR->>DB: UPDATE items qty += n, unitCost = blended
+  StR->>DB: INSERT stock_movements (received)
+end
+StR->>DB: COMMIT
+deactivate StR
+alt StockChangeException
+  StR-->>IS: error message shown
+else success
+  IVM->>IVM: load()
+  IS->>Ses: log("Received stock …")
+end

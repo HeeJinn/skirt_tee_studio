@@ -1,0 +1,188 @@
+// App-shell smoke test: builds with fake repositories (no real database)
+// and checks the three screens are wired into the nav. Business logic
+// (cart math, checkout, CRUD) is covered by the ViewModel unit tests in
+// test/presentation/viewmodels/ instead of driving it through widget taps.
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+
+import 'package:skirt_tee_studio/core/theme/app_theme.dart';
+import 'package:skirt_tee_studio/domain/entities/appearance.dart';
+import 'package:skirt_tee_studio/domain/entities/item.dart';
+import 'package:skirt_tee_studio/domain/entities/staff.dart';
+import 'package:skirt_tee_studio/presentation/shell/app_shell.dart';
+import 'package:skirt_tee_studio/presentation/viewmodels/cart_view_model.dart';
+import 'package:skirt_tee_studio/presentation/viewmodels/inventory_view_model.dart';
+import 'package:skirt_tee_studio/presentation/viewmodels/money_view_model.dart';
+import 'package:skirt_tee_studio/presentation/viewmodels/reservation_view_model.dart';
+import 'package:skirt_tee_studio/presentation/viewmodels/sales_view_model.dart';
+import 'package:skirt_tee_studio/presentation/viewmodels/session_view_model.dart';
+import 'package:skirt_tee_studio/presentation/viewmodels/settings_view_model.dart';
+
+import 'fakes/fake_item_repository.dart';
+import 'fakes/fake_money_repository.dart';
+import 'fakes/fake_reservation_repository.dart';
+import 'fakes/fake_sale_repository.dart';
+import 'fakes/fake_settings_repository.dart';
+import 'fakes/fake_staff_repository.dart';
+import 'fakes/fake_stock_repository.dart';
+
+Widget _buildApp(SessionViewModel session) {
+  final inventoryViewModel = InventoryViewModel(FakeItemRepository(), FakeStockRepository())
+    ..addItem(const Item(
+      id: 'item-1',
+      name: 'Basic Tee',
+      category: 'T-Shirt',
+      unitPrice: 199,
+      qtyOnHand: 5,
+    ));
+
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider.value(value: inventoryViewModel),
+      ChangeNotifierProvider(create: (_) => CartViewModel(FakeSaleRepository())),
+      ChangeNotifierProvider(
+        create: (_) => ReservationViewModel(FakeReservationRepository(), FakeSaleRepository()),
+      ),
+      ChangeNotifierProvider(create: (_) => SalesViewModel(FakeSaleRepository())),
+      ChangeNotifierProvider(create: (_) => SettingsViewModel(FakeSettingsRepository())),
+      ChangeNotifierProvider.value(value: session),
+      ChangeNotifierProvider(create: (_) => MoneyViewModel(FakeMoneyRepository(), FakeStockRepository())),
+    ],
+    child: MaterialApp(theme: AppTheme.light, home: const AppShell()),
+  );
+}
+
+/// Pumps the shell at a real desktop size — the Windows runner enforces a
+/// minimum window of ~1100x640, so the 800x600 test default isn't a size
+/// the app can actually be shown at.
+Future<void> _pumpApp(WidgetTester tester, {StaffRole role = StaffRole.owner}) async {
+  tester.view.physicalSize = const Size(1280, 800);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(_buildApp(await signedInSession(role: role)));
+}
+
+void main() {
+  testWidgets('a cashier sees no owner-only screens and cannot edit stock', (tester) async {
+    await _pumpApp(tester, role: StaffRole.cashier);
+    await tester.pumpAndSettle();
+
+    for (final ownerOnly in ['Staff', 'Sales', 'Reports', 'Money', 'Customers', 'Back up data']) {
+      expect(find.text(ownerOnly), findsNothing, reason: ownerOnly);
+    }
+
+    await tester.tap(find.text('Inventory'));
+    await tester.pumpAndSettle();
+    expect(find.text('Basic Tee'), findsOneWidget);
+    expect(find.text('ADD ITEM'), findsNothing);
+    expect(find.byTooltip('Delete'), findsNothing);
+  });
+
+  testWidgets(
+      'App shell renders with POS, Inventory, Reservations, Sales, Reports, Customers nav',
+      (WidgetTester tester) async {
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.text('POS'), findsWidgets);
+    expect(find.text('Inventory'), findsOneWidget);
+    expect(find.text('Reservations'), findsOneWidget);
+    expect(find.text('Sales'), findsOneWidget);
+    expect(find.text('Reports'), findsOneWidget);
+    expect(find.text('Customers'), findsOneWidget);
+  });
+
+  testWidgets('Settings shows every theme, applies a pick, and closes on nav', (tester) async {
+    await _pumpApp(tester, role: StaffRole.cashier);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    for (final preset in ThemePresets.all) {
+      expect(find.text(preset.name), findsOneWidget, reason: preset.name);
+    }
+
+    final settings = tester.element(find.byType(AppShell)).read<SettingsViewModel>();
+    await tester.tap(find.text('Blush Atelier'));
+    await tester.tap(find.text('Dark'));
+    await tester.pumpAndSettle();
+    expect(settings.themePreset, ThemePresets.blushAtelier);
+    expect(settings.appearanceMode, AppearanceMode.dark);
+
+    await tester.tap(find.text('POS'));
+    await tester.pumpAndSettle();
+    expect(find.text('Blush Atelier'), findsNothing);
+    expect(find.text('Basic Tee'), findsOneWidget);
+  });
+
+  test('every preset builds a light and dark theme from its own palette', () {
+    for (final preset in ThemePresets.all) {
+      for (final palette in [preset.light, preset.dark]) {
+        final theme = AppTheme.fromPalette(palette);
+        expect(theme.brightness, palette.brightness);
+        expect(theme.colorScheme.primary, palette.brand);
+        expect(theme.extension<AppTokens>(), palette.tokens);
+      }
+    }
+  });
+
+  testWidgets('Customers screen shows reservation customers grouped by contact, no exceptions',
+      (WidgetTester tester) async {
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Customers'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('No customers found'), findsOneWidget);
+  });
+
+  testWidgets('POS screen lists inventory items', (WidgetTester tester) async {
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Basic Tee'), findsOneWidget);
+  });
+
+  testWidgets('switching to Inventory shows the Add Item button',
+      (WidgetTester tester) async {
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Inventory'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ADD ITEM'), findsOneWidget);
+  });
+
+  testWidgets('Money screen opens on an empty book with no exceptions', (tester) async {
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Money'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Nothing put in yet'), findsOneWidget);
+    expect(find.text('Nothing recorded yet'), findsOneWidget);
+  });
+
+  testWidgets('opening Add Item shows the photo picker with no exceptions',      (WidgetTester tester) async {
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Inventory'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ADD ITEM'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('ADD PHOTO'), findsOneWidget);
+    expect(find.text('REMOVE'), findsNothing);
+  });
+}

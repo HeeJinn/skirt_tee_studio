@@ -1,0 +1,161 @@
+classDiagram
+direction LR
+class Item {
+  +String id
+  +String name
+  +String category
+  +double unitPrice
+  +int qtyOnHand
+  +bool isBargain
+  +String? imagePath
+  +double? unitCost
+  +isLowStock(int threshold) bool
+  +copyWith() Item
+}
+class Sale {
+  +String id
+  +DateTime dateTime
+  +List~SaleLineItem~ lineItems
+  +PaymentMethod? paymentMethod
+  +double? amountTendered
+  +totalAmount() double
+  +totalItemsSold() int
+  +changeGiven() double?
+}
+class SaleLineItem {
+  +String itemId
+  +String itemName
+  +double unitPrice
+  +int qty
+  +double? unitCost
+  +subtotal() double
+  +costOfGoods() double
+}
+class CartLine {
+  +Item item
+  +int qty
+  +subtotal() double
+}
+class Reservation {
+  +String id
+  +String customerName
+  +String contact
+  +String itemId
+  +String itemName
+  +DateTime pickupDate
+  +ReservationStatus status
+  +copyWith(status) Reservation
+}
+class StaffMember {
+  +String id
+  +String name
+  +StaffRole role
+}
+class AuditEntry {
+  +DateTime at
+  +String staffName
+  +String action
+}
+class MoneyEntry {
+  +String id
+  +DateTime at
+  +MoneyEntryKind kind
+  +double amount
+  +ExpenseCategory? category
+  +PaidFrom paidFrom
+  +String? person
+  +String note
+  +isOwnersMoneyIn() bool
+}
+class StockLot {
+  +String id
+  +DateTime at
+  +String supplier
+  +double itemsCost
+  +double fees
+  +PaidFrom paidFrom
+  +String? person
+  +String note
+  +totalCost() double
+}
+class LotLine {
+  +String itemId
+  +String itemName
+  +int qty
+  +double sellingPrice
+}
+class StockMovement {
+  +DateTime at
+  +String itemId
+  +String itemName
+  +StockMovementType type
+  +int qty
+  +double unitCost
+  +WriteOffReason? reason
+  +String? lotId
+  +String note
+  +value() double
+}
+class PaymentMethod {
+  <<enumeration>>
+  cash
+  gcash
+  maya
+  card
+  cashless_legacy
+}
+class ReservationStatus {
+  <<enumeration>>
+  pending
+  pickedUp
+}
+class StaffRole {
+  <<enumeration>>
+  owner
+  cashier
+}
+class MoneyEntryKind {
+  <<enumeration>>
+  capitalIn
+  expense
+  ownerDraw
+}
+class PaidFrom {
+  <<enumeration>>
+  shop
+  owners
+}
+class StockMovementType {
+  <<enumeration>>
+  received
+  writeOff
+  found
+}
+class WriteOffReason {
+  <<enumeration>>
+  damaged
+  lost
+  givenAway
+  countShort
+  removed
+  other
+}
+
+Sale "1" *-- "1..*" SaleLineItem : contains
+SaleLineItem "0..*" --> "1" Item : snapshot of
+CartLine "0..*" --> "1" Item : holds
+CartLine ..> SaleLineItem : becomes at checkout
+Reservation "0..*" --> "1" Item : reserves
+StockLot "1" o-- "1..*" LotLine : split into
+LotLine "0..*" --> "1" Item : adds stock to
+StockMovement "0..*" --> "1" Item : changes
+StockMovement "0..*" ..> "0..1" StockLot : lotId
+AuditEntry "0..*" ..> "1" StaffMember : staffName
+Sale --> PaymentMethod
+Reservation --> ReservationStatus
+StaffMember --> StaffRole
+MoneyEntry --> MoneyEntryKind
+MoneyEntry --> PaidFrom
+StockLot --> PaidFrom
+StockMovement --> StockMovementType
+StockMovement --> WriteOffReason
