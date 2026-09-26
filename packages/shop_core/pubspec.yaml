@@ -1,0 +1,31 @@
+name: shop_core
+description: "Data, cloud sync, and business rules shared by The Skirt & Tee Studio apps"
+publish_to: 'none'
+version: 1.0.0
+
+resolution: workspace
+
+environment:
+  sdk: ^3.13.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Local database + cloud sync
+  powersync: ^2.4.0
+  sqlite_async: ^0.14.5
+  supabase_flutter: ^2.17.2
+  path_provider: ^2.1.0
+  path: ^1.9.0
+
+  # Utilities
+  uuid: ^4.3.0
+  intl: ^0.19.0
+  crypto: ^3.0.7
+  cross_file: ^0.3.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
