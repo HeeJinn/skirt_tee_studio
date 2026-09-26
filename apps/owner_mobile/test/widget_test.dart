@@ -6,15 +6,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:owner_mobile/app.dart';
 import 'package:owner_mobile/presentation/screens/more/more_screen.dart';
 import 'package:owner_mobile/presentation/viewmodels/sales_view_model.dart';
+import 'package:owner_mobile/presentation/viewmodels/stock_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/today_view_model.dart';
 import 'package:shop_core/domain/entities/cloud_sync.dart';
 import 'package:shop_core/domain/entities/item.dart';
 import 'package:shop_core/domain/entities/sale.dart';
+import 'package:shop_core/domain/entities/stock.dart';
 import 'package:shop_core/testing/fake_cloud_sync_repository.dart';
 import 'package:shop_core/testing/fake_item_repository.dart';
 import 'package:shop_core/testing/fake_reservation_repository.dart';
 import 'package:shop_core/testing/fake_sale_repository.dart';
 import 'package:shop_core/testing/fake_settings_repository.dart';
+import 'package:shop_core/testing/fake_stock_repository.dart';
 import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 
 /// A Saturday at the shop: two sales so far, one of them bigger than last
@@ -25,7 +28,7 @@ final _now = DateTime(2026, 9, 26, 15);
 late FakeSaleRepository _saleRepo;
 late SalesViewModel _salesVm;
 
-Future<(TodayViewModel, SalesViewModel)> _seededShop() async {
+Future<(TodayViewModel, SalesViewModel, StockViewModel)> _seededShop() async {
   final sales = _saleRepo = FakeSaleRepository();
   final items = FakeItemRepository();
   Sale sale(String id, DateTime at, double price, int qty, {double? tendered}) => Sale(
@@ -48,11 +51,39 @@ Future<(TodayViewModel, SalesViewModel)> _seededShop() async {
     ],
   ));
   await items.add(const Item(id: 'tee', name: 'Basic tee', category: 'T-Shirt', unitPrice: 150, qtyOnHand: 0));
-  await items.add(const Item(id: 'skirt', name: 'Pleated skirt', category: 'Skirt', unitPrice: 450, qtyOnHand: 12));
-  final today = TodayViewModel(sales, items, FakeReservationRepository(), FakeSettingsRepository(), clock: () => _now);
+  await items.add(
+    const Item(id: 'skirt', name: 'Pleated skirt', category: 'Skirt', unitPrice: 450, qtyOnHand: 12, unitCost: 200),
+  );
+  await items.add(const Item(id: 'dress', name: 'Floral dress', category: 'Dress', unitPrice: 600, qtyOnHand: 3));
+  final stock = FakeStockRepository(items);
+  stock.lots.add(StockLot(id: 'lot-1', at: DateTime(2026, 9, 20, 9), supplier: 'Divisoria bale', itemsCost: 2800));
+  stock.movements.addAll([
+    StockMovement(
+      at: DateTime(2026, 9, 20, 9),
+      itemId: 'skirt',
+      itemName: 'Pleated skirt',
+      type: StockMovementType.received,
+      qty: 14,
+      unitCost: 200,
+      lotId: 'lot-1',
+    ),
+    StockMovement(
+      at: DateTime(2026, 9, 23, 17),
+      itemId: 'skirt',
+      itemName: 'Pleated skirt',
+      type: StockMovementType.writeOff,
+      qty: 1,
+      unitCost: 200,
+      reason: WriteOffReason.damaged,
+      note: 'Torn hem',
+    ),
+  ]);
+  final settings = FakeSettingsRepository();
+  final today = TodayViewModel(sales, items, FakeReservationRepository(), settings, clock: () => _now);
   final salesVm = _salesVm = SalesViewModel(sales, clock: () => _now);
-  await Future.wait([today.load(), salesVm.load()]);
-  return (today, salesVm);
+  final stockVm = StockViewModel(items, stock, sales, settings, clock: () => _now);
+  await Future.wait([today.load(), salesVm.load(), stockVm.load()]);
+  return (today, salesVm, stockVm);
 }
 
 /// Pumps the app at an iPhone 15's screen size, or [size].
@@ -68,8 +99,8 @@ Future<FakeCloudSyncRepository> _pumpApp(
   final cloud = FakeCloudSyncRepository(initial: initial ?? CloudSyncState.signedOut);
   final sync = CloudSyncViewModel(cloud, onRemoteChanges: () async {});
   await sync.load();
-  final (today, sales) = await _seededShop();
-  await tester.pumpWidget(OwnerApp(cloudSync: sync, today: today, sales: sales));
+  final (today, sales, stock) = await _seededShop();
+  await tester.pumpWidget(OwnerApp(cloudSync: sync, today: today, sales: sales, stock: stock));
   await tester.pumpAndSettle();
   return cloud;
 }
@@ -280,6 +311,97 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     await tester.drag(find.byType(ListView), const Offset(0, -1000));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  Future<void> openStock(WidgetTester tester) async {
+    await tester.tap(find.descendant(of: find.byType(CupertinoTabBar), matching: find.text('Stock')));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('Stock shows every item with how many are left', (tester) async {
+    await _pumpApp(tester, initial: _connected);
+    await openStock(tester);
+
+    expect(find.text('3 items · 15 pieces on hand'), findsOneWidget);
+    expect(find.text('Low (1)'), findsOneWidget);
+    expect(find.text('Sold out (1)'), findsOneWidget);
+    expect(find.text('Basic tee'), findsOneWidget);
+    expect(find.text('₱150.00 · Sold out'), findsOneWidget);
+    expect(find.text('₱600.00 · 3 left'), findsOneWidget);
+    expect(find.text('₱450.00 · 12 left'), findsOneWidget);
+  });
+
+  testWidgets('filters and search narrow the grid', (tester) async {
+    await _pumpApp(tester, initial: _connected);
+    await openStock(tester);
+
+    await tester.tap(find.text('Low (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Floral dress'), findsOneWidget);
+    expect(find.text('Pleated skirt'), findsNothing);
+
+    await tester.tap(find.text('Sold out (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Basic tee'), findsOneWidget);
+    expect(find.text('Floral dress'), findsNothing);
+
+    await tester.tap(find.text('All'));
+    await tester.enterText(find.byType(CupertinoSearchTextField), 'skirt');
+    await tester.pumpAndSettle();
+    expect(find.text('Pleated skirt'), findsOneWidget);
+    expect(find.text('Basic tee'), findsNothing);
+
+    await tester.enterText(find.byType(CupertinoSearchTextField), 'hat');
+    await tester.pumpAndSettle();
+    expect(find.text('No items match "hat".'), findsOneWidget);
+  });
+
+  testWidgets('an item shows its price, margin, stock, and history', (tester) async {
+    await _pumpApp(tester, initial: _connected);
+    await openStock(tester);
+
+    await tester.tap(find.text('Pleated skirt'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('₱200.00 each'), findsOneWidget);
+    expect(find.text('₱250.00 (56%)'), findsOneWidget);
+    expect(find.text('₱2,400.00'), findsOneWidget, reason: '12 on hand × ₱200');
+    expect(find.text('5 pieces'), findsOneWidget, reason: 'sold in the last 30 days: 2 + 1 + 2');
+
+    await tester.drag(find.byType(ListView), const Offset(0, -2000));
+    await tester.pumpAndSettle();
+    expect(find.text('Damaged'), findsOneWidget);
+    expect(find.textContaining('Torn hem'), findsOneWidget);
+    expect(find.text('Received from Divisoria bale'), findsOneWidget);
+    expect(find.text('+14'), findsOneWidget);
+  });
+
+  testWidgets('an item with no cost says what it makes is unknown', (tester) async {
+    await _pumpApp(tester, initial: _connected);
+    await openStock(tester);
+
+    await tester.tap(find.text('Floral dress'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Not recorded'), findsOneWidget);
+    expect(find.textContaining('No cost recorded yet'), findsOneWidget);
+    expect(find.text('Makes per piece'), findsNothing);
+  });
+
+  testWidgets('Stock and an item fit on a small phone', (tester) async {
+    await _pumpApp(tester, initial: _connected, size: const Size(320, 568));
+    await openStock(tester);
+    expect(tester.takeException(), isNull);
+
+    // Third in the grid, so below the fold on this screen.
+    final page = find.descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable)).first;
+    await tester.drag(page, const Offset(0, -400));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pleated skirt'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -2000));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });

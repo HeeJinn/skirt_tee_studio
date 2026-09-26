@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 
 import '../screens/more/more_screen.dart';
 import '../screens/sales/sales_screen.dart';
+import '../screens/stock/stock_screen.dart';
 import '../screens/today/today_screen.dart';
 import '../widgets/tab_placeholder.dart';
 
@@ -21,11 +22,7 @@ class HomeTabs extends StatelessWidget {
   static Widget _page(int index) => switch (index) {
         0 => const TodayScreen(),
         1 => const SalesScreen(),
-        2 => const TabPlaceholder(
-            title: 'Stock',
-            icon: CupertinoIcons.tag,
-            message: 'Your items, with photos and what\'s running low, will show here.',
-          ),
+        2 => const StockScreen(),
         3 => const TabPlaceholder(
             title: 'Money',
             icon: CupertinoIcons.money_dollar_circle,

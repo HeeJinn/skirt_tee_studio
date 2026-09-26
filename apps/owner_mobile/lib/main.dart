@@ -10,5 +10,6 @@ Future<void> main() async {
     cloudSync: injector.cloudSyncViewModel,
     today: injector.todayViewModel,
     sales: injector.salesViewModel,
+    stock: injector.stockViewModel,
   ));
 }
