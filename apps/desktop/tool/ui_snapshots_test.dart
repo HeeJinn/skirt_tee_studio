@@ -33,12 +33,12 @@ import 'package:skirt_tee_studio/presentation/viewmodels/settings_view_model.dar
 import 'package:shop_core/domain/entities/staff.dart';
 import 'package:skirt_tee_studio/presentation/screens/auth/sign_in_screen.dart';
 
-import '../test/fakes/fake_money_repository.dart';
-import '../test/fakes/fake_reservation_repository.dart';
-import '../test/fakes/fake_sale_repository.dart';
-import '../test/fakes/fake_settings_repository.dart';
+import 'package:shop_core/testing/fake_money_repository.dart';
+import 'package:shop_core/testing/fake_reservation_repository.dart';
+import 'package:shop_core/testing/fake_sale_repository.dart';
+import 'package:shop_core/testing/fake_settings_repository.dart';
 import '../test/fakes/fake_staff_repository.dart';
-import '../test/fakes/fake_stock_repository.dart';
+import 'package:shop_core/testing/fake_stock_repository.dart';
 
 const _outDir = 'build/ui_snapshots';
 final _boundaryKey = GlobalKey();

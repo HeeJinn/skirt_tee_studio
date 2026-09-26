@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shop_core/domain/entities/sale.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/sales_view_model.dart';
 
-import '../../fakes/fake_sale_repository.dart';
+import 'package:shop_core/testing/fake_sale_repository.dart';
 
 void main() {
   late FakeSaleRepository repository;

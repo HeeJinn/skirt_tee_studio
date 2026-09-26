@@ -1,5 +1,5 @@
-import 'package:shop_core/domain/entities/sale.dart';
-import 'package:shop_core/domain/repositories/sale_repository.dart';
+import '../domain/entities/sale.dart';
+import '../domain/repositories/sale_repository.dart';
 
 class FakeSaleRepository implements SaleRepository {
   Sale? lastRecordedSale;

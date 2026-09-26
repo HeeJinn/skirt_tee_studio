@@ -18,7 +18,12 @@ CupertinoThemeData cupertinoThemeFor(ThemePreset preset) => CupertinoThemeData(
       scaffoldBackgroundColor: CupertinoColors.systemGroupedBackground,
     );
 
-/// Status colors for the current light/dark mode (success, warning,
-/// danger), checked for contrast in the shared palettes.
-AppTokens shopTokens(BuildContext context, ThemePreset preset) =>
-    CupertinoTheme.brightnessOf(context) == Brightness.dark ? preset.dark.tokens : preset.light.tokens;
+/// The shop's theme on the phone. Fixed for now; a picker can come later,
+/// as on the desktop.
+const kShopPreset = ThemePresets.studioSage;
+
+/// Status and chart colors for the current light/dark mode (success,
+/// warning, danger, chart series), checked for contrast in the shared
+/// palettes.
+AppTokens shopTokens(BuildContext context) =>
+    CupertinoTheme.brightnessOf(context) == Brightness.dark ? kShopPreset.dark.tokens : kShopPreset.light.tokens;

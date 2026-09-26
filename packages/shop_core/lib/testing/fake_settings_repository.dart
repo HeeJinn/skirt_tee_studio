@@ -1,5 +1,5 @@
-import 'package:shop_core/domain/entities/appearance.dart';
-import 'package:shop_core/domain/repositories/settings_repository.dart';
+import '../domain/entities/appearance.dart';
+import '../domain/repositories/settings_repository.dart';
 
 class FakeSettingsRepository implements SettingsRepository {
   int? _lowStockThreshold;

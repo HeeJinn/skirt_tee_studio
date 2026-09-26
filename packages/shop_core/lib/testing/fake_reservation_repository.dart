@@ -1,5 +1,5 @@
-import 'package:shop_core/domain/entities/reservation.dart';
-import 'package:shop_core/domain/repositories/reservation_repository.dart';
+import '../domain/entities/reservation.dart';
+import '../domain/repositories/reservation_repository.dart';
 
 class FakeReservationRepository implements ReservationRepository {
   final List<Reservation> _reservations = [];

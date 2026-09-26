@@ -1,6 +1,6 @@
-import 'package:shop_core/domain/entities/item.dart';
-import 'package:shop_core/domain/entities/stock.dart';
-import 'package:shop_core/domain/repositories/stock_repository.dart';
+import '../domain/entities/item.dart';
+import '../domain/entities/stock.dart';
+import '../domain/repositories/stock_repository.dart';
 
 import 'fake_item_repository.dart';
 

@@ -1,5 +1,5 @@
-import 'package:shop_core/domain/entities/item.dart';
-import 'package:shop_core/domain/repositories/item_repository.dart';
+import '../domain/entities/item.dart';
+import '../domain/repositories/item_repository.dart';
 
 class FakeItemRepository implements ItemRepository {
   final List<Item> _items = [];

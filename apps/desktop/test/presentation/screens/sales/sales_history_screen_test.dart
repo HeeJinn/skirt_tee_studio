@@ -7,7 +7,7 @@ import 'package:shop_core/domain/entities/sale.dart';
 import 'package:skirt_tee_studio/presentation/screens/sales/sales_history_screen.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/sales_view_model.dart';
 
-import '../../../fakes/fake_sale_repository.dart';
+import 'package:shop_core/testing/fake_sale_repository.dart';
 
 void main() {
   testWidgets('range, payment, and search filters narrow the list', (tester) async {

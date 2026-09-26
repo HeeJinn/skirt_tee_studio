@@ -4,8 +4,8 @@ import 'package:shop_core/domain/entities/reservation.dart';
 import 'package:shop_core/domain/entities/sale.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/reservation_view_model.dart';
 
-import '../../fakes/fake_reservation_repository.dart';
-import '../../fakes/fake_sale_repository.dart';
+import 'package:shop_core/testing/fake_reservation_repository.dart';
+import 'package:shop_core/testing/fake_sale_repository.dart';
 
 void main() {
   late FakeReservationRepository repository;

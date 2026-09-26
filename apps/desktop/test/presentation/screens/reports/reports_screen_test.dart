@@ -14,9 +14,9 @@ import 'package:skirt_tee_studio/presentation/screens/reports/reports_screen.dar
 import 'package:skirt_tee_studio/presentation/viewmodels/inventory_view_model.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/sales_view_model.dart';
 
-import '../../../fakes/fake_item_repository.dart';
-import '../../../fakes/fake_stock_repository.dart';
-import '../../../fakes/fake_sale_repository.dart';
+import 'package:shop_core/testing/fake_item_repository.dart';
+import 'package:shop_core/testing/fake_stock_repository.dart';
+import 'package:shop_core/testing/fake_sale_repository.dart';
 
 Widget _buildApp({required bool withSales}) {
   final inventoryViewModel = InventoryViewModel(FakeItemRepository(), FakeStockRepository())

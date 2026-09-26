@@ -1,5 +1,5 @@
-import 'package:shop_core/domain/entities/money_entry.dart';
-import 'package:shop_core/domain/repositories/money_repository.dart';
+import '../domain/entities/money_entry.dart';
+import '../domain/repositories/money_repository.dart';
 
 class FakeMoneyRepository implements MoneyRepository {
   FakeMoneyRepository({DateTime? booksStartedAt}) : _booksStartedAt = booksStartedAt ?? DateTime(2026, 1, 1);
