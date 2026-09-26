@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
 
+import '../screens/money/money_screen.dart';
 import '../screens/more/more_screen.dart';
 import '../screens/sales/sales_screen.dart';
 import '../screens/stock/stock_screen.dart';
 import '../screens/today/today_screen.dart';
-import '../widgets/tab_placeholder.dart';
 
 /// The five tabs. Each keeps its own navigation stack, so switching tabs
 /// and back returns to wherever you were.
@@ -23,11 +23,7 @@ class HomeTabs extends StatelessWidget {
         0 => const TodayScreen(),
         1 => const SalesScreen(),
         2 => const StockScreen(),
-        3 => const TabPlaceholder(
-            title: 'Money',
-            icon: CupertinoIcons.money_dollar_circle,
-            message: 'Payback, profit, and the money log will show here.',
-          ),
+        3 => const MoneyScreen(),
         _ => const MoreScreen(),
       };
 

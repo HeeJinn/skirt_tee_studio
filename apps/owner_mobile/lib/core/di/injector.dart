@@ -6,6 +6,7 @@ import 'package:shop_core/data/datasources/local/reservation_local_data_source.d
 import 'package:shop_core/data/datasources/local/sale_local_data_source.dart';
 import 'package:shop_core/data/datasources/local/settings_local_data_source.dart';
 import 'package:shop_core/data/repositories/item_repository_impl.dart';
+import 'package:shop_core/data/repositories/money_repository_impl.dart';
 import 'package:shop_core/data/repositories/reservation_repository_impl.dart';
 import 'package:shop_core/data/repositories/sale_repository_impl.dart';
 import 'package:shop_core/data/repositories/settings_repository_impl.dart';
@@ -14,6 +15,7 @@ import 'package:shop_core/data/sync/cloud_sync_repository_impl.dart';
 import 'package:shop_core/domain/entities/cloud_sync.dart';
 import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 
+import '../../presentation/viewmodels/money_view_model.dart';
 import '../../presentation/viewmodels/sales_view_model.dart';
 import '../../presentation/viewmodels/stock_view_model.dart';
 import '../../presentation/viewmodels/today_view_model.dart';
@@ -26,12 +28,14 @@ class Injector {
     required this.todayViewModel,
     required this.salesViewModel,
     required this.stockViewModel,
+    required this.moneyViewModel,
   });
 
   final CloudSyncViewModel cloudSyncViewModel;
   final TodayViewModel todayViewModel;
   final SalesViewModel salesViewModel;
   final StockViewModel stockViewModel;
+  final MoneyViewModel moneyViewModel;
 
   static Future<Injector> create() async {
     final db = await DatabaseService.instance.database;
@@ -47,11 +51,18 @@ class Injector {
       settingsRepository,
     );
     final salesViewModel = SalesViewModel(saleRepository);
-    final stockViewModel = StockViewModel(itemRepository, StockRepositoryImpl(db), saleRepository, settingsRepository);
+    final stockRepository = StockRepositoryImpl(db);
+    final stockViewModel = StockViewModel(itemRepository, stockRepository, saleRepository, settingsRepository);
+    final moneyViewModel = MoneyViewModel(MoneyRepositoryImpl(db), saleRepository, stockRepository, itemRepository);
 
     // Everything that shows shop data, reloaded when the shop computer's
     // changes arrive.
-    Future<void> loadShopData() => Future.wait([todayViewModel.load(), salesViewModel.load(), stockViewModel.load()]);
+    Future<void> loadShopData() => Future.wait([
+          todayViewModel.load(),
+          salesViewModel.load(),
+          stockViewModel.load(),
+          moneyViewModel.load(),
+        ]);
 
     final cloudSyncViewModel = CloudSyncViewModel(
       CloudSyncRepositoryImpl(
@@ -80,6 +91,7 @@ class Injector {
       todayViewModel: todayViewModel,
       salesViewModel: salesViewModel,
       stockViewModel: stockViewModel,
+      moneyViewModel: moneyViewModel,
     );
   }
 }

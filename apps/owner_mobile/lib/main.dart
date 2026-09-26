@@ -11,5 +11,6 @@ Future<void> main() async {
     today: injector.todayViewModel,
     sales: injector.salesViewModel,
     stock: injector.stockViewModel,
+    money: injector.moneyViewModel,
   ));
 }

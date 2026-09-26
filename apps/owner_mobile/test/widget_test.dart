@@ -5,15 +5,18 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:owner_mobile/app.dart';
 import 'package:owner_mobile/presentation/screens/more/more_screen.dart';
+import 'package:owner_mobile/presentation/viewmodels/money_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/sales_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/stock_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/today_view_model.dart';
 import 'package:shop_core/domain/entities/cloud_sync.dart';
 import 'package:shop_core/domain/entities/item.dart';
+import 'package:shop_core/domain/entities/money_entry.dart';
 import 'package:shop_core/domain/entities/sale.dart';
 import 'package:shop_core/domain/entities/stock.dart';
 import 'package:shop_core/testing/fake_cloud_sync_repository.dart';
 import 'package:shop_core/testing/fake_item_repository.dart';
+import 'package:shop_core/testing/fake_money_repository.dart';
 import 'package:shop_core/testing/fake_reservation_repository.dart';
 import 'package:shop_core/testing/fake_sale_repository.dart';
 import 'package:shop_core/testing/fake_settings_repository.dart';
@@ -28,7 +31,7 @@ final _now = DateTime(2026, 9, 26, 15);
 late FakeSaleRepository _saleRepo;
 late SalesViewModel _salesVm;
 
-Future<(TodayViewModel, SalesViewModel, StockViewModel)> _seededShop() async {
+Future<(TodayViewModel, SalesViewModel, StockViewModel, MoneyViewModel)> _seededShop() async {
   final sales = _saleRepo = FakeSaleRepository();
   final items = FakeItemRepository();
   Sale sale(String id, DateTime at, double price, int qty, {double? tendered}) => Sale(
@@ -82,8 +85,27 @@ Future<(TodayViewModel, SalesViewModel, StockViewModel)> _seededShop() async {
   final today = TodayViewModel(sales, items, FakeReservationRepository(), settings, clock: () => _now);
   final salesVm = _salesVm = SalesViewModel(sales, clock: () => _now);
   final stockVm = StockViewModel(items, stock, sales, settings, clock: () => _now);
-  await Future.wait([today.load(), salesVm.load(), stockVm.load()]);
-  return (today, salesVm, stockVm);
+  // The books started on the 1st, when Ana put in the first ten thousand.
+  final money = FakeMoneyRepository(booksStartedAt: DateTime(2026, 9, 1));
+  await money.add(MoneyEntry(
+    id: 'in',
+    at: DateTime(2026, 9, 1, 9),
+    kind: MoneyEntryKind.capitalIn,
+    amount: 10000,
+    paidFrom: PaidFrom.owners,
+    person: 'Ana',
+  ));
+  await money.add(MoneyEntry(
+    id: 'rent',
+    at: DateTime(2026, 9, 5, 9),
+    kind: MoneyEntryKind.expense,
+    amount: 1000,
+    category: ExpenseCategory.rent,
+  ));
+  await money.add(MoneyEntry(id: 'home', at: DateTime(2026, 9, 10, 9), kind: MoneyEntryKind.ownerDraw, amount: 1000));
+  final moneyVm = MoneyViewModel(money, sales, stock, items, clock: () => _now);
+  await Future.wait([today.load(), salesVm.load(), stockVm.load(), moneyVm.load()]);
+  return (today, salesVm, stockVm, moneyVm);
 }
 
 /// Pumps the app at an iPhone 15's screen size, or [size].
@@ -99,8 +121,8 @@ Future<FakeCloudSyncRepository> _pumpApp(
   final cloud = FakeCloudSyncRepository(initial: initial ?? CloudSyncState.signedOut);
   final sync = CloudSyncViewModel(cloud, onRemoteChanges: () async {});
   await sync.load();
-  final (today, sales, stock) = await _seededShop();
-  await tester.pumpWidget(OwnerApp(cloudSync: sync, today: today, sales: sales, stock: stock));
+  final (today, sales, stock, money) = await _seededShop();
+  await tester.pumpWidget(OwnerApp(cloudSync: sync, today: today, sales: sales, stock: stock, money: money));
   await tester.pumpAndSettle();
   return cloud;
 }
@@ -402,6 +424,73 @@ void main() {
     await tester.tap(find.text('Pleated skirt'));
     await tester.pumpAndSettle();
     await tester.drag(find.byType(ListView), const Offset(0, -2000));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  Future<void> openMoney(WidgetTester tester) async {
+    await tester.tap(find.descendant(of: find.byType(CupertinoTabBar), matching: find.text('Money')));
+    await tester.pumpAndSettle();
+  }
+
+  Finder moneyPage() => find.descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable)).first;
+
+  testWidgets('Money shows how much of the investment is paid back', (tester) async {
+    await _pumpApp(tester, initial: _connected);
+    await openMoney(tester);
+
+    // ₱470 earned since the books started, on ₱10,000 put in.
+    expect(find.text('5%'), findsOneWidget);
+    expect(find.textContaining('₱470 earned of ₱10,000 put in'), findsOneWidget);
+    expect(find.text('Put in by Ana'), findsOneWidget);
+    expect(find.text('₱9,470.00'), findsOneWidget, reason: 'still in the shop: 10,000 + 470 − 1,000 taken home');
+    expect(find.text('₱2,400.00'), findsOneWidget, reason: 'stock on the rack: 12 skirts at ₱200');
+    expect(find.textContaining('books started on Sep 1, 2026'), findsOneWidget);
+  });
+
+  testWidgets("Money breaks down the period's profit, like the shop computer", (tester) async {
+    await _pumpApp(tester, initial: _connected);
+    await openMoney(tester);
+    await tester.scrollUntilVisible(find.text('Net profit'), 200, scrollable: moneyPage());
+
+    // Last 30 days, from Sep 1 (the books started after the period did).
+    expect(find.text('PROFIT FROM SEP 1'), findsOneWidget);
+    expect(find.text('₱2,850.00'), findsOneWidget, reason: 'sales');
+    expect(find.text('₱1,670.00'), findsOneWidget, reason: 'gross profit');
+    expect(find.text('Rent'), findsOneWidget);
+    expect(find.text('₱470.00'), findsOneWidget, reason: 'net: 1,670 − 1,000 rent − 200 damaged');
+    expect(find.textContaining('₱300.00 of these sales were stock from before the books started'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('7 days'), -200, scrollable: moneyPage());
+    await tester.tap(find.text('7 days'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Net profit'), 200, scrollable: moneyPage());
+    expect(find.text('PROFIT FROM SEP 20'), findsOneWidget);
+    expect(find.text('₱970.00'), findsOneWidget, reason: 'no rent this week');
+  });
+
+  testWidgets('the money log lists entries and stock bought, by month', (tester) async {
+    await _pumpApp(tester, initial: _connected);
+    await openMoney(tester);
+    await tester.scrollUntilVisible(find.text('Money log'), 200, scrollable: moneyPage());
+    await tester.drag(moneyPage(), const Offset(0, -200));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Money log'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('SEPTEMBER 2026'), findsOneWidget);
+    expect(find.text('Stock from Divisoria bale'), findsOneWidget);
+    expect(find.text('−₱2,800.00'), findsOneWidget);
+    expect(find.text('Money put in'), findsOneWidget);
+    expect(find.text('+₱10,000.00'), findsOneWidget);
+    expect(find.text('Taken home'), findsOneWidget);
+  });
+
+  testWidgets('Money fits on a small phone', (tester) async {
+    await _pumpApp(tester, initial: _connected, size: const Size(320, 568));
+    await openMoney(tester);
+    await tester.drag(moneyPage(), const Offset(0, -3000));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });

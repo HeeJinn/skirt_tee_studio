@@ -7,6 +7,7 @@ import 'core/theme/cupertino_theme.dart';
 import 'presentation/screens/auth/not_configured_screen.dart';
 import 'presentation/screens/auth/sign_in_screen.dart';
 import 'presentation/shell/home_tabs.dart';
+import 'presentation/viewmodels/money_view_model.dart';
 import 'presentation/viewmodels/sales_view_model.dart';
 import 'presentation/viewmodels/stock_view_model.dart';
 import 'presentation/viewmodels/today_view_model.dart';
@@ -20,12 +21,14 @@ class OwnerApp extends StatelessWidget {
     required this.today,
     required this.sales,
     required this.stock,
+    required this.money,
   });
 
   final CloudSyncViewModel cloudSync;
   final TodayViewModel today;
   final SalesViewModel sales;
   final StockViewModel stock;
+  final MoneyViewModel money;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +38,7 @@ class OwnerApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: today),
         ChangeNotifierProvider.value(value: sales),
         ChangeNotifierProvider.value(value: stock),
+        ChangeNotifierProvider.value(value: money),
       ],
       child: CupertinoApp(
         title: 'Skirt & Tee',

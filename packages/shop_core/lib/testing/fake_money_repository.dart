@@ -11,6 +11,9 @@ class FakeMoneyRepository implements MoneyRepository {
   Future<DateTime> booksStartedAt() async => _booksStartedAt;
 
   @override
+  Future<DateTime?> booksStartedAtIfSet() async => _booksStartedAt;
+
+  @override
   Future<List<MoneyEntry>> getAll() async => List.unmodifiable(_entries..sort((a, b) => b.at.compareTo(a.at)));
 
   @override

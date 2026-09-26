@@ -14,6 +14,14 @@ void main() {
     repo = MoneyRepositoryImpl(db);
   });
 
+  test('reading the books start date without stamping leaves the database alone', () async {
+    expect(await repo.booksStartedAtIfSet(), isNull);
+    expect(await db.getAll('SELECT 1 FROM ps_crud'), isEmpty, reason: 'nothing queued for upload');
+
+    final stamped = await repo.booksStartedAt();
+    expect(await repo.booksStartedAtIfSet(), stamped);
+  });
+
   test('the books start date is stamped once and then kept', () async {
     final first = await repo.booksStartedAt();
     expect(await repo.booksStartedAt(), first);
