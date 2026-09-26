@@ -142,9 +142,11 @@ class ValueRow extends StatelessWidget {
     final strong = tone == ValueTone.strong || tone == ValueTone.positive || tone == ValueTone.negative;
     final labelStyle = ShopType.body(context).copyWith(
       fontWeight: strong ? FontWeight.w600 : FontWeight.w400,
+      // A muted row with a figure ("Money log  6") keeps its label in ink,
+      // as iOS lists do; only a placeholder row ("No sales yet") is grey.
       color: destructive
           ? colors.danger
-          : indent || tone == ValueTone.muted
+          : indent || (tone == ValueTone.muted && value == null)
               ? colors.secondaryInk
               : colors.ink,
     );

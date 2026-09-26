@@ -29,7 +29,7 @@ class TodayScreen extends StatelessWidget {
     return CupertinoPageScaffold(
       child: CustomScrollView(
         slivers: [
-          const CupertinoSliverNavigationBar(largeTitle: Text('Today')),
+          const CupertinoSliverNavigationBar(largeTitle: Text('Today'), border: null),
           CupertinoSliverRefreshControl(onRefresh: context.read<TodayViewModel>().load),
           if (snapshot == null)
             const SliverFillRemaining(hasScrollBody: false, child: Center(child: CupertinoActivityIndicator()))
@@ -296,18 +296,18 @@ class _Attention extends StatelessWidget {
         ),
       if (snapshot.lowStock.isNotEmpty)
         ValueRow(
-          leading: IconBadge(icon: CupertinoIcons.exclamationmark, color: colors.warning),
+          leading: IconBadge(icon: CupertinoIcons.exclamationmark_triangle_fill, color: colors.warning),
           label: '${snapshot.lowStock.length} ${plural(snapshot.lowStock.length, 'item', 'items')} low on stock',
           detail: _names(snapshot.lowStock.map((i) => '${i.name} (${i.qtyOnHand})')),
         ),
       if (snapshot.pickupsOverdue > 0)
         ValueRow(
-          leading: IconBadge(icon: CupertinoIcons.clock, color: colors.danger),
+          leading: IconBadge(icon: CupertinoIcons.clock_fill, color: colors.danger),
           label: '${snapshot.pickupsOverdue} ${plural(snapshot.pickupsOverdue, 'pickup', 'pickups')} overdue',
         ),
       if (snapshot.pickupsDueToday > 0)
         ValueRow(
-          leading: IconBadge(icon: CupertinoIcons.bag, color: colors.accent),
+          leading: IconBadge(icon: CupertinoIcons.bag_fill, color: colors.accent),
           label: '${snapshot.pickupsDueToday} ${plural(snapshot.pickupsDueToday, 'pickup', 'pickups')} due today',
         ),
     ];
@@ -315,7 +315,7 @@ class _Attention extends StatelessWidget {
     return GroupedSection(
       title: 'Needs attention',
       children: rows.isEmpty
-          ? [ValueRow(leading: IconBadge(icon: CupertinoIcons.checkmark, color: colors.success), label: 'All clear')]
+          ? [ValueRow(leading: IconBadge(icon: CupertinoIcons.checkmark_alt, color: colors.success), label: 'All clear')]
           : rows,
     );
   }

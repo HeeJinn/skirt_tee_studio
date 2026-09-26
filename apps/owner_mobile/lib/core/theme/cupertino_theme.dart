@@ -23,8 +23,8 @@ CupertinoThemeData cupertinoThemeFor(ThemePreset preset) {
     // Bars take the page's color, slightly see-through, so content scrolling
     // under them blurs rather than cutting off at a white strip.
     barBackgroundColor: both(
-      light.tokens.sunken.withValues(alpha: 0.92),
-      dark.bg.withValues(alpha: 0.92),
+      light.tokens.sunken.withValues(alpha: 0.8),
+      dark.bg.withValues(alpha: 0.8),
     ),
     textTheme: CupertinoTextThemeData(
       primaryColor: both(light.brand, dark.brand),

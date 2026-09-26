@@ -1,9 +1,8 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/shop_ui.dart';
+import 'glass.dart';
 
 /// One destination in [ShopTabBar].
 class ShopTab {
@@ -41,67 +40,41 @@ class ShopTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = ShopColors.of(context);
-    final dark = colors.isDark;
+    // The selected tab's platter: a wash of the shop's sage, as iOS 26
+    // tints the selected tab with the app's color.
+    final platter = colors.accent.withValues(alpha: colors.isDark ? 0.22 : 0.12);
 
-    // The glass: the page's own tone, mostly see-through, over a blur of
-    // whatever scrolls underneath.
-    final tint = dark ? const Color(0xFF232A28).withValues(alpha: 0.72) : const Color(0xFFFFFFFF).withValues(alpha: 0.72);
-    final edge = dark ? const Color(0xFFFFFFFF).withValues(alpha: 0.10) : const Color(0xFFFFFFFF).withValues(alpha: 0.9);
-    final platter = dark ? const Color(0xFFFFFFFF).withValues(alpha: 0.12) : colors.ink.withValues(alpha: 0.07);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(Radii.pill),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF000000).withValues(alpha: dark ? 0.3 : 0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(Radii.pill),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
-            height: height,
-            padding: const EdgeInsets.all(Space.xs),
-            decoration: BoxDecoration(
-              color: tint,
-              borderRadius: BorderRadius.circular(Radii.pill),
-              // The bright rim that makes it read as glass.
-              border: Border.all(color: edge, width: 0.8),
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final slot = constraints.maxWidth / tabs.length;
-                return Stack(
+    return GlassSurface(
+      child: Container(
+        height: height,
+        padding: const EdgeInsets.all(Space.xs),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final slot = constraints.maxWidth / tabs.length;
+            return Stack(
+              children: [
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 420),
+                  curve: _spring,
+                  left: slot * currentIndex,
+                  top: 0,
+                  bottom: 0,
+                  width: slot,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(color: platter, borderRadius: BorderRadius.circular(Radii.pill)),
+                  ),
+                ),
+                Row(
                   children: [
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 420),
-                      curve: _spring,
-                      left: slot * currentIndex,
-                      top: 0,
-                      bottom: 0,
-                      width: slot,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(color: platter, borderRadius: BorderRadius.circular(Radii.pill)),
+                    for (var i = 0; i < tabs.length; i++)
+                      Expanded(
+                        child: _TabItem(tab: tabs[i], selected: i == currentIndex, onTap: () => onTap(i)),
                       ),
-                    ),
-                    Row(
-                      children: [
-                        for (var i = 0; i < tabs.length; i++)
-                          Expanded(
-                            child: _TabItem(tab: tabs[i], selected: i == currentIndex, onTap: () => onTap(i)),
-                          ),
-                      ],
-                    ),
                   ],
-                );
-              },
-            ),
-          ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -118,7 +91,7 @@ class _TabItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = ShopColors.of(context);
-    final color = selected ? colors.ink : colors.secondaryInk;
+    final color = selected ? colors.accent : colors.secondaryInk;
 
     return Semantics(
       button: true,

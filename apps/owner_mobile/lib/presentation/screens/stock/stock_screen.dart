@@ -10,6 +10,7 @@ import '../../widgets/ui/badges.dart';
 import '../../widgets/ui/empty_state.dart';
 import '../../widgets/ui/line_art.dart';
 import '../../widgets/ui/section.dart';
+import '../../widgets/ui/segmented_control.dart';
 import 'item_detail_screen.dart';
 
 /// Every item in a photo grid, searchable, and filtered by how much is left.
@@ -29,7 +30,7 @@ class StockScreen extends StatelessWidget {
     return CupertinoPageScaffold(
       child: CustomScrollView(
         slivers: [
-          const CupertinoSliverNavigationBar(largeTitle: Text('Stock')),
+          const CupertinoSliverNavigationBar(largeTitle: Text('Stock'), border: null),
           CupertinoSliverRefreshControl(onRefresh: context.read<StockViewModel>().load),
           SliverToBoxAdapter(
             child: Padding(
@@ -37,23 +38,23 @@ class StockScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  CupertinoSearchTextField(placeholder: 'Search items', onChanged: vm.search),
+                  CupertinoSearchTextField(
+                    placeholder: 'Search items',
+                    onChanged: vm.search,
+                    borderRadius: BorderRadius.circular(Radii.pill),
+                    padding: const EdgeInsetsDirectional.fromSTEB(Space.sm, 10, Space.md, 10),
+                  ),
                   const SizedBox(height: Space.md),
-                  CupertinoSlidingSegmentedControl<StockFilter>(
-                    groupValue: vm.filter,
-                    onValueChanged: (f) {
-                      if (f != null) vm.selectFilter(f);
-                    },
-                    children: {
+                  ShopSegmentedControl<StockFilter>(
+                    value: vm.filter,
+                    onChanged: vm.selectFilter,
+                    segments: {
                       for (final (f, name) in const [
                         (StockFilter.all, 'All'),
                         (StockFilter.low, 'Low'),
                         (StockFilter.soldOut, 'Sold out'),
                       ])
-                        f: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: Space.xs),
-                          child: FittedBox(fit: BoxFit.scaleDown, child: Text(label(f, name))),
-                        ),
+                        f: label(f, name),
                     },
                   ),
                   const SizedBox(height: Space.md),

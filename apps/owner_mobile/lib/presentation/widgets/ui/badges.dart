@@ -9,20 +9,46 @@ Color onStatus(BuildContext context) {
   return colors.isDark ? colors.page : const Color(0xFFFFFFFF);
 }
 
-/// An iOS Settings-style icon: a glyph on a small tinted square.
+/// A row's icon. In lists of things that happened — sales, money, stock,
+/// what needs attention — a glyph in its color on a soft wash of that
+/// color, in a circle, as Wallet marks transactions. [solid] is the iOS
+/// Settings squircle, kept for account and settings rows.
 class IconBadge extends StatelessWidget {
-  const IconBadge({super.key, required this.icon, required this.color});
+  const IconBadge({super.key, required IconData this.icon, required this.color, this.solid = false}) : glyph = null;
 
-  final IconData icon;
+  /// A character in place of an icon, where no icon fits: "₱" for cash.
+  const IconBadge.glyph(String this.glyph, {super.key, required this.color})
+      : icon = null,
+        solid = false;
+
+  final IconData? icon;
+  final String? glyph;
   final Color color;
+  final bool solid;
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) {
+    if (solid) {
+      return Container(
         width: 30,
         height: 30,
         decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(Radii.badge)),
         child: Icon(icon, size: 18, color: onStatus(context)),
       );
+    }
+    return Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: ShopColors.of(context).isDark ? 0.2 : 0.12),
+        shape: BoxShape.circle,
+      ),
+      child: glyph != null
+          ? Text(glyph!, style: ShopType.body(context).copyWith(fontWeight: FontWeight.w700, color: color, height: 1))
+          : Icon(icon, size: 18, color: color),
+    );
+  }
 }
 
 /// A small rounded label on a tint of its own color: stock status on a
