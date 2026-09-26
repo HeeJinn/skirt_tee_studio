@@ -134,34 +134,77 @@ Future<FakeCloudSyncRepository> _pumpApp(
 const _connected = CloudSyncState(status: CloudStatus.upToDate, email: 'owner@example.com');
 
 void main() {
-  testWidgets('signing in with the wrong password shows why and stays on sign-in', (tester) async {
+  /// Email, Continue, then the password and Sign In.
+  Future<void> signIn(WidgetTester tester, String password) async {
+    await tester.enterText(find.widgetWithText(CupertinoTextField, 'Email'), 'owner@example.com');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(CupertinoButton, 'Continue'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(CupertinoTextField, 'Password'), password);
+    await tester.pump();
+    await tester.tap(find.widgetWithText(CupertinoButton, 'Sign In'));
+    await tester.pumpAndSettle();
+  }
+
+  bool enabled(WidgetTester tester, String label) =>
+      tester.widget<CupertinoButton>(find.widgetWithText(CupertinoButton, label)).onPressed != null;
+
+  testWidgets('sign-in asks for the email first, then the password', (tester) async {
     await _pumpApp(tester);
 
-    await tester.enterText(find.byType(CupertinoTextFormFieldRow).at(0), 'owner@example.com');
-    await tester.enterText(find.byType(CupertinoTextFormFieldRow).at(1), 'wrong');
-    await tester.tap(find.widgetWithText(CupertinoButton, 'Sign in'));
-    await tester.pumpAndSettle();
+    expect(find.widgetWithText(CupertinoTextField, 'Password'), findsNothing);
+    expect(enabled(tester, 'Continue'), isFalse, reason: 'nothing to continue with yet');
 
-    expect(find.text("That email and password don't match."), findsOneWidget);
-    expect(find.text('Today'), findsNothing);
+    await tester.enterText(find.widgetWithText(CupertinoTextField, 'Email'), 'owner@example.com');
+    await tester.pump();
+    expect(enabled(tester, 'Continue'), isTrue);
+
+    await tester.tap(find.widgetWithText(CupertinoButton, 'Continue'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(CupertinoTextField, 'Password'), findsOneWidget);
+    expect(enabled(tester, 'Sign In'), isFalse, reason: 'no password yet');
   });
 
-  testWidgets('an empty email is caught before signing in', (tester) async {
+  testWidgets('signing in with the wrong password shows why and stays on sign-in', (tester) async {
+    await _pumpApp(tester);
+    await signIn(tester, 'wrong');
+
+    expect(find.text("That email and password don't match."), findsOneWidget);
+    expect(find.byKey(const ValueKey('tab-Today')), findsNothing);
+  });
+
+  testWidgets("an email that isn't one is caught before asking for the password", (tester) async {
     await _pumpApp(tester);
 
-    await tester.tap(find.widgetWithText(CupertinoButton, 'Sign in'));
+    await tester.enterText(find.widgetWithText(CupertinoTextField, 'Email'), 'owner');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(CupertinoButton, 'Continue'));
     await tester.pumpAndSettle();
 
     expect(find.text("Enter the account's email."), findsOneWidget);
+    expect(find.widgetWithText(CupertinoTextField, 'Password'), findsNothing);
+  });
+
+  testWidgets('forgot password says where the login comes from', (tester) async {
+    await _pumpApp(tester);
+
+    await tester.tap(find.text('Forgot password?'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Settings → Cloud backup'), findsOneWidget);
+
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CupertinoAlertDialog), findsNothing);
+  });
+
+  testWidgets('sign-in fits on a small phone', (tester) async {
+    await _pumpApp(tester, size: const Size(320, 568));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('a good sign-in opens the five tabs', (tester) async {
     await _pumpApp(tester);
-
-    await tester.enterText(find.byType(CupertinoTextFormFieldRow).at(0), 'owner@example.com');
-    await tester.enterText(find.byType(CupertinoTextFormFieldRow).at(1), FakeCloudSyncRepository.goodPassword);
-    await tester.tap(find.widgetWithText(CupertinoButton, 'Sign in'));
-    await tester.pumpAndSettle();
+    await signIn(tester, FakeCloudSyncRepository.goodPassword);
 
     expect(tester.takeException(), isNull);
     for (final tab in ['Today', 'Sales', 'Stock', 'Money', 'More']) {

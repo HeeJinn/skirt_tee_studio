@@ -353,6 +353,10 @@ void main() {
       await _snap(tester, 'sign_out_sheet_$suffix');
       await tester.tap(find.descendant(of: find.byType(CupertinoActionSheet), matching: find.text('Sign out')));
       await _snap(tester, 'sign_in_$suffix');
+      await tester.enterText(find.widgetWithText(CupertinoTextField, 'Email'), 'ana@skirtandtee.ph');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(CupertinoButton, 'Continue'));
+      await _snap(tester, 'sign_in_password_$suffix');
 
       debugDefaultTargetPlatformOverride = null;
     });
