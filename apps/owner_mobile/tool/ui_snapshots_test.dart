@@ -195,6 +195,22 @@ Future<Widget> _buildApp(String imagesDir) async {
     await money.add(e);
   }
 
+  return _app(items, sales, reservations, stock, money);
+}
+
+/// A shop that has recorded nothing yet, for the empty states.
+Future<Widget> _buildEmptyApp() {
+  final items = FakeItemRepository();
+  return _app(items, FakeSaleRepository(), FakeReservationRepository(), FakeStockRepository(items), FakeMoneyRepository());
+}
+
+Future<Widget> _app(
+  FakeItemRepository items,
+  FakeSaleRepository sales,
+  FakeReservationRepository reservations,
+  FakeStockRepository stock,
+  FakeMoneyRepository money,
+) async {
   final settings = FakeSettingsRepository();
   final todayVm = TodayViewModel(sales, items, reservations, settings, clock: () => _now);
   final salesVm = SalesViewModel(sales, clock: () => _now);
@@ -316,6 +332,35 @@ void main() {
       await _snap(tester, 'sign_out_sheet_$suffix');
       await tester.tap(find.descendant(of: find.byType(CupertinoActionSheet), matching: find.text('Sign out')));
       await _snap(tester, 'sign_in_$suffix');
+
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    testWidgets('empty shop snapshots ($suffix)', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      tester.view.physicalSize = const Size(393, 852);
+      tester.view.devicePixelRatio = 1;
+      tester.view.padding = const FakeViewPadding(top: 59, bottom: 34);
+      tester.platformDispatcher.platformBrightnessTestValue = brightness;
+      addTearDown(() {
+        tester.view.reset();
+        tester.platformDispatcher.clearPlatformBrightnessTestValue();
+      });
+
+      await tester.pumpWidget((await tester.runAsync(_buildEmptyApp))!);
+      await _tab(tester, 'Sales');
+      await _snap(tester, 'empty_sales_$suffix');
+      await _tab(tester, 'Stock');
+      await _snap(tester, 'empty_stock_$suffix');
+      await _tab(tester, 'Money');
+      await tester.scrollUntilVisible(
+        find.text('Money log'),
+        200,
+        scrollable: find.descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable)).first,
+      );
+      await _scroll(tester, 300);
+      await tester.tap(find.text('Money log'));
+      await _snap(tester, 'empty_money_log_$suffix');
 
       debugDefaultTargetPlatformOverride = null;
     });

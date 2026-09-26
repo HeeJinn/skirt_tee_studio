@@ -5,6 +5,8 @@ import 'package:shop_core/core/format/money_format.dart';
 
 import '../../../core/theme/shop_ui.dart';
 import '../../viewmodels/money_view_model.dart';
+import '../../widgets/ui/empty_state.dart';
+import '../../widgets/ui/line_art.dart';
 import '../../widgets/ui/section.dart';
 
 /// Every entry the owners recorded — money put in, expenses, money taken
@@ -25,12 +27,9 @@ class MoneyLogScreen extends StatelessWidget {
       navigationBar: const CupertinoNavigationBar(middle: Text('Money log'), previousPageTitle: 'Money'),
       child: SafeArea(
         child: log.isEmpty
-            ? Padding(
-                padding: const EdgeInsets.all(Space.xl),
-                child: Text(
-                  'Nothing recorded yet. Money put in, expenses, and stock bought show up here once recorded on the shop computer.',
-                  style: ShopType.subhead(context),
-                ),
+            ? const EmptyState(
+                drawing: LineArtDrawing.paper,
+                message: 'Nothing recorded yet. Money put in, expenses, and stock bought show up here once recorded on the shop computer.',
               )
             : ListView(
                 padding: const EdgeInsets.only(bottom: Space.xxl),

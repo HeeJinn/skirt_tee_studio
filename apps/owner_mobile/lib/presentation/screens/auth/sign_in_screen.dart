@@ -4,6 +4,7 @@ import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 
 import '../../../core/theme/shop_ui.dart';
 import '../../widgets/shop_wordmark.dart';
+import '../../widgets/ui/line_art.dart';
 import '../../widgets/ui/section.dart';
 
 /// Sign in with the shop's owner account — the same login used under
@@ -50,6 +51,17 @@ class _SignInScreenState extends State<SignInScreen> {
               padding: const EdgeInsets.symmetric(vertical: 32),
               children: [
                 const ShopWordmark(),
+                const SizedBox(height: Space.xxl),
+                // A tee and a dress, each drawn in one line as the screen opens.
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    LineArt(LineArtDrawing.tee, height: 88),
+                    SizedBox(width: Space.sm),
+                    LineArt(LineArtDrawing.dress, height: 88),
+                  ],
+                ),
                 const SizedBox(height: Space.xxl),
                 const SectionHeader('Sign in', top: 0),
                 CupertinoFormSection.insetGrouped(

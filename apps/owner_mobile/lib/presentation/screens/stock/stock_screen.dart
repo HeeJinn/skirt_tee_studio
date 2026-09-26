@@ -7,6 +7,8 @@ import '../../../core/theme/shop_ui.dart';
 import '../../viewmodels/stock_view_model.dart';
 import '../../widgets/item_photo.dart';
 import '../../widgets/ui/badges.dart';
+import '../../widgets/ui/empty_state.dart';
+import '../../widgets/ui/line_art.dart';
 import '../../widgets/ui/section.dart';
 import 'item_detail_screen.dart';
 
@@ -68,6 +70,14 @@ class StockScreen extends StatelessWidget {
           ),
           if (!vm.loaded)
             const SliverFillRemaining(hasScrollBody: false, child: Center(child: CupertinoActivityIndicator()))
+          else if (vm.count(StockFilter.all) == 0)
+            const SliverFillRemaining(
+              hasScrollBody: false,
+              child: EmptyState(
+                drawing: LineArtDrawing.tee,
+                message: 'No items yet. They show up here once added on the shop computer.',
+              ),
+            )
           else if (items.isEmpty)
             SliverToBoxAdapter(
               child: Padding(
@@ -76,7 +86,7 @@ class StockScreen extends StatelessWidget {
                   vm.query.trim().isNotEmpty
                       ? 'No items match "${vm.query.trim()}".'
                       : switch (vm.filter) {
-                          StockFilter.all => 'No items yet. They show up here once added on the shop computer.',
+                          StockFilter.all => 'No items.',
                           StockFilter.low => 'Nothing is running low.',
                           StockFilter.soldOut => 'Nothing is sold out.',
                         },

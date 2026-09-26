@@ -7,6 +7,8 @@ import 'package:shop_core/core/format/money_format.dart';
 import '../../../core/theme/shop_ui.dart';
 import '../../viewmodels/sales_view_model.dart';
 import '../../widgets/sale_tile.dart';
+import '../../widgets/ui/empty_state.dart';
+import '../../widgets/ui/line_art.dart';
 import '../../widgets/ui/section.dart';
 import 'sale_detail_screen.dart';
 
@@ -82,17 +84,20 @@ class SalesScreen extends StatelessWidget {
           ),
           if (!vm.loaded)
             const SliverFillRemaining(hasScrollBody: false, child: Center(child: CupertinoActivityIndicator()))
+          else if (days.isEmpty && vm.range == ReportRange.today)
+            const SliverFillRemaining(
+              hasScrollBody: false,
+              child: EmptyState(
+                drawing: LineArtDrawing.bag,
+                message: 'No sales yet today. They show up here as the shop computer rings them up.',
+              ),
+            )
           else if (days.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(Space.gutter + Space.xs, Space.xl, Space.gutter + Space.xs, 0),
-                child: Text(
-                  vm.range == ReportRange.today
-                      ? 'No sales yet today. They show up here as the shop computer rings them up.'
-                      : 'No sales in this period.',
-                  style: ShopType.subhead(context),
-                ),
+                child: Text('No sales in this period.', style: ShopType.subhead(context)),
               ),
             )
           else
