@@ -1,8 +1,9 @@
 import 'dart:async';
 
-import 'package:shop_core/domain/entities/cloud_sync.dart';
-import 'package:shop_core/domain/repositories/cloud_sync_repository.dart';
+import '../domain/entities/cloud_sync.dart';
+import '../domain/repositories/cloud_sync_repository.dart';
 
+/// For tests in any app: a cloud connection that never touches the network.
 class FakeCloudSyncRepository implements CloudSyncRepository {
   FakeCloudSyncRepository({CloudSyncState initial = CloudSyncState.signedOut}) : _current = initial;
 

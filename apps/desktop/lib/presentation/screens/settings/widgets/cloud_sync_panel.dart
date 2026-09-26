@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:shop_core/core/theme/app_theme.dart';
 import 'package:shop_core/domain/entities/cloud_sync.dart';
-import '../../../viewmodels/cloud_sync_view_model.dart';
+import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 import '../../../widgets/app_snackbar.dart';
 import '../../../widgets/cloud_status.dart';
 

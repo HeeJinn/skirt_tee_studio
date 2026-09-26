@@ -45,6 +45,10 @@ class ItemPhotoSync {
 
   Future<void> stop() async => _queue?.stopSyncing();
 
+  /// Forgets every photo and empties this device's photo folder (signing
+  /// out of a phone). Does nothing if syncing never started.
+  Future<void> clear() async => _queue?.clearQueue();
+
   Stream<List<WatchedAttachmentItem>> _watchPhotos() => _db
       .watch('SELECT DISTINCT imageKey FROM items WHERE imageKey IS NOT NULL', triggerOnTables: const ['items'])
       .asyncMap((rows) async {

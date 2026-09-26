@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shop_core/domain/entities/cloud_sync.dart';
-import 'package:skirt_tee_studio/presentation/viewmodels/cloud_sync_view_model.dart';
+import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 
-import '../../fakes/fake_cloud_sync_repository.dart';
+import 'package:shop_core/testing/fake_cloud_sync_repository.dart';
 
 void main() {
   late FakeCloudSyncRepository repository;

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import 'package:shop_core/domain/entities/cloud_sync.dart';
-import 'package:shop_core/domain/repositories/cloud_sync_repository.dart';
+import '../domain/entities/cloud_sync.dart';
+import '../domain/repositories/cloud_sync_repository.dart';
 
 /// Cloud backup status for Settings and the sidebar, plus connect and
 /// disconnect. [onRemoteChanges] reloads the other screens' data when the

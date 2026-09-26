@@ -14,7 +14,7 @@ import 'package:shop_core/data/repositories/stock_repository_impl.dart';
 import 'package:shop_core/data/sync/cloud_sync_repository_impl.dart';
 import '../../data/sync/legacy_import.dart';
 import '../../presentation/viewmodels/cart_view_model.dart';
-import '../../presentation/viewmodels/cloud_sync_view_model.dart';
+import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 import '../../presentation/viewmodels/inventory_view_model.dart';
 import '../../presentation/viewmodels/money_view_model.dart';
 import '../../presentation/viewmodels/reservation_view_model.dart';
