@@ -206,8 +206,14 @@ class _Sidebar extends StatelessWidget {
               ],
             ),
           ),
-          ...items,
-          const Spacer(),
+          // The nav scrolls rather than overflowing when the window is short
+          // (the runner allows windows down to 680 tall); the footer below
+          // always stays in view.
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: items),
+            ),
+          ),
           if (cloudState != null) _CloudStatusItem(state: cloudState!, onTap: onOpenSettings),
           _NavItem(
             icon: settingsOpen ? Icons.tune : Icons.tune_outlined,

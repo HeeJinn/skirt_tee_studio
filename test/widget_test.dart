@@ -61,8 +61,13 @@ Widget _buildApp(SessionViewModel session, FakeCloudSyncRepository cloud) {
 /// Pumps the shell at a real desktop size — the Windows runner enforces a
 /// minimum window of ~1100x640, so the 800x600 test default isn't a size
 /// the app can actually be shown at.
-Future<void> _pumpApp(WidgetTester tester, {StaffRole role = StaffRole.owner, FakeCloudSyncRepository? cloud}) async {
-  tester.view.physicalSize = const Size(1280, 800);
+Future<void> _pumpApp(
+  WidgetTester tester, {
+  StaffRole role = StaffRole.owner,
+  FakeCloudSyncRepository? cloud,
+  Size size = const Size(1280, 800),
+}) async {
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(_buildApp(await signedInSession(role: role), cloud ?? FakeCloudSyncRepository()));
@@ -160,6 +165,20 @@ void main() {
 
     expect(find.text('Offline'), findsOneWidget);
     expect(find.byTooltip('3 changes will upload when the internet is back'), findsOneWidget);
+  });
+
+  testWidgets('the sidebar fits the smallest window the runner allows, cloud status and all', (tester) async {
+    // windows/runner/win32_window.cpp: minimum track size 1116 x 680.
+    final cloud = FakeCloudSyncRepository(
+      initial: const CloudSyncState(status: CloudStatus.upToDate, email: 'owner@example.com'),
+    );
+    await _pumpApp(tester, cloud: cloud, size: const Size(1116, 680));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull, reason: 'no overflow stripes');
+    expect(find.text('Backed up'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Back up data'), findsOneWidget);
   });
 
   test('every preset builds a light and dark theme from its own palette', () {
