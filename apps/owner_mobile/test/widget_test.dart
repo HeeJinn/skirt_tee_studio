@@ -228,17 +228,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('owner@example.com'), findsOneWidget);
 
-    await tester.tap(find.text('Sign out'));
+    await tester.tap(find.text('Sign Out'));
     await tester.pumpAndSettle();
-    expect(find.text('Sign out?'), findsOneWidget);
+    expect(find.text('Sign Out?'), findsOneWidget);
 
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     expect(find.text('owner@example.com'), findsOneWidget, reason: 'cancel keeps you signed in');
 
-    await tester.tap(find.text('Sign out'));
+    await tester.tap(find.text('Sign Out'));
     await tester.pumpAndSettle();
-    await tester.tap(find.descendant(of: find.byType(CupertinoActionSheet), matching: find.text('Sign out')));
+    await tester.tap(find.descendant(of: find.byType(CupertinoActionSheet), matching: find.text('Sign Out')));
     await tester.pumpAndSettle();
     expect(find.textContaining('owner login'), findsOneWidget, reason: 'back on sign-in');
   });

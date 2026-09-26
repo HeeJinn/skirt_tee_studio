@@ -18,7 +18,7 @@ class MoreScreen extends StatelessWidget {
     final confirmed = await showCupertinoModalPopup<bool>(
       context: context,
       builder: (sheetContext) => CupertinoActionSheet(
-        title: const Text('Sign out?'),
+        title: const Text('Sign Out?'),
         message: const Text(
           "The shop's data and photos are removed from this phone. They stay safe in the cloud and on the shop computer.",
         ),
@@ -26,7 +26,7 @@ class MoreScreen extends StatelessWidget {
           CupertinoActionSheetAction(
             isDestructiveAction: true,
             onPressed: () => Navigator.of(sheetContext).pop(true),
-            child: const Text('Sign out'),
+            child: const Text('Sign Out'),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
@@ -82,7 +82,7 @@ class MoreScreen extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         child: Center(
-                          child: Text('Sign out', style: ShopType.body(context).copyWith(color: colors.danger)),
+                          child: Text('Sign Out', style: ShopType.body(context).copyWith(color: colors.danger)),
                         ),
                       ),
                     ),

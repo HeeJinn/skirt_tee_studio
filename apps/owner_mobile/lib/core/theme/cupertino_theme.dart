@@ -1,4 +1,7 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shop_core/core/theme/app_theme.dart';
 
 /// The shop's theme presets are shared with the desktop app, which builds
@@ -16,6 +19,7 @@ CupertinoThemeData cupertinoThemeFor(ThemePreset preset) {
   final ink = both(light.ink, dark.ink);
 
   const base = CupertinoTextThemeData();
+  TextStyle ui(TextStyle s) => s.copyWith(fontFamily: uiFontFamily);
   return CupertinoThemeData(
     primaryColor: both(light.brand, dark.brand),
     primaryContrastingColor: both(light.onBrand, dark.onBrand),
@@ -28,7 +32,13 @@ CupertinoThemeData cupertinoThemeFor(ThemePreset preset) {
     ),
     textTheme: CupertinoTextThemeData(
       primaryColor: both(light.brand, dark.brand),
-      textStyle: base.textStyle.copyWith(color: ink),
+      textStyle: ui(base.textStyle).copyWith(color: ink),
+      actionTextStyle: ui(base.actionTextStyle),
+      actionSmallTextStyle: ui(base.actionSmallTextStyle),
+      tabLabelTextStyle: ui(base.tabLabelTextStyle),
+      navActionTextStyle: ui(base.navActionTextStyle),
+      pickerTextStyle: ui(base.pickerTextStyle),
+      dateTimePickerTextStyle: ui(base.dateTimePickerTextStyle),
       // Large titles in Georgia, like the shop computer's screen titles.
       navLargeTitleTextStyle: base.navLargeTitleTextStyle.copyWith(
         fontFamily: 'Georgia',
@@ -36,10 +46,17 @@ CupertinoThemeData cupertinoThemeFor(ThemePreset preset) {
         letterSpacing: -0.5,
         color: ink,
       ),
-      navTitleTextStyle: base.navTitleTextStyle.copyWith(color: ink),
+      navTitleTextStyle: ui(base.navTitleTextStyle).copyWith(color: ink),
     ),
   );
 }
+
+/// The interface font: San Francisco on iPhone and Mac (null keeps the
+/// Cupertino default, which resolves to it), and Inter, the closest free
+/// match, everywhere else. San Francisco exists only on Apple devices and
+/// its license rules out bundling it, so without this a preview on Android
+/// or Windows reads in Roboto or Segoe and doesn't look like iOS at all.
+final String? uiFontFamily = !kIsWeb && (Platform.isIOS || Platform.isMacOS) ? null : 'Inter';
 
 /// The shop's theme on the phone. Fixed for now; a picker can come later,
 /// as on the desktop.

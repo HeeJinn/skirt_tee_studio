@@ -85,14 +85,10 @@ class GroupedSection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (var i = 0; i < children.length; i++) ...[
-                if (i > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(left: Space.lg),
-                    child: Container(height: 0.5, color: colors.hairline),
-                  ),
-                children[i],
-              ],
+              // Every row but the last draws a separator beneath it, starting
+              // where its text does (see ValueRow).
+              for (var i = 0; i < children.length; i++)
+                i < children.length - 1 ? _Separated(child: children[i]) : children[i],
             ],
           ),
         ),
@@ -100,6 +96,16 @@ class GroupedSection extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Marks a row of a [GroupedSection] that has another row below it.
+class _Separated extends InheritedWidget {
+  const _Separated({required super.child});
+
+  static bool of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<_Separated>() != null;
+
+  @override
+  bool updateShouldNotify(_Separated oldWidget) => false;
 }
 
 /// How a row's figure is set.
@@ -160,33 +166,57 @@ class ValueRow extends StatelessWidget {
       },
     );
 
-    final row = Padding(
-      padding: EdgeInsets.fromLTRB(indent ? Space.xl + Space.xs : Space.lg, 11, Space.lg, 11),
-      child: Row(
-        children: [
-          if (leading != null) ...[leading!, const SizedBox(width: Space.md)],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: labelStyle, maxLines: labelLines, overflow: TextOverflow.ellipsis),
-                if (detail != null) ...[
-                  const SizedBox(height: Space.xxs),
-                  Text(detail!, style: ShopType.footnote(context), maxLines: 2, overflow: TextOverflow.ellipsis),
-                ],
+    final content = Row(
+      children: [
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: labelStyle, maxLines: labelLines, overflow: TextOverflow.ellipsis),
+              if (detail != null) ...[
+                const SizedBox(height: Space.xxs),
+                Text(detail!, style: ShopType.footnote(context), maxLines: 2, overflow: TextOverflow.ellipsis),
               ],
-            ),
+            ],
           ),
-          if (value != null) ...[
-            const SizedBox(width: Space.md),
-            Text(value!, style: valueStyle),
-          ],
-          // Actions (sign out) don't open a page, so no chevron.
-          if (onTap != null && !destructive) ...[
-            const SizedBox(width: Space.sm),
-            Icon(CupertinoIcons.chevron_forward, size: 16, color: colors.tertiaryInk),
-          ],
+        ),
+        if (value != null) ...[
+          const SizedBox(width: Space.md),
+          Text(value!, style: valueStyle),
         ],
+        // Actions (sign out) don't open a page, so no chevron.
+        if (onTap != null && !destructive) ...[
+          const SizedBox(width: Space.sm),
+          Icon(CupertinoIcons.chevron_forward, size: 16, color: colors.tertiaryInk),
+        ],
+      ],
+    );
+
+    // The separator below runs from where the text starts to the group's
+    // edge, clear of the leading icon, as iOS insets it. The row stretches
+    // to the taller of icon and text so the line sits on its bottom edge.
+    final row = Padding(
+      padding: EdgeInsets.only(left: indent ? Space.xl + Space.xs : Space.lg),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (leading != null) ...[
+              Padding(padding: const EdgeInsets.symmetric(vertical: 11), child: Center(child: leading!)),
+              const SizedBox(width: Space.md),
+            ],
+            Expanded(
+              child: DecoratedBox(
+                position: DecorationPosition.foreground,
+                decoration: _Separated.of(context)
+                    ? BoxDecoration(border: Border(bottom: BorderSide(color: colors.hairline, width: 0.5)))
+                    : const BoxDecoration(),
+                child: Padding(padding: const EdgeInsets.fromLTRB(0, 11, Space.lg, 11), child: content),
+              ),
+            ),
+          ],
+        ),
       ),
     );
     return onTap == null ? row : Pressable(onTap: onTap!, child: row);

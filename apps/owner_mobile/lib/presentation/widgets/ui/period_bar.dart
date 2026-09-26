@@ -85,22 +85,24 @@ class PeriodBar extends StatelessWidget {
     if (initial.isAfter(max)) initial = Period.current(period.kind, now).start!;
     if (min != null && initial.isBefore(min)) initial = min;
 
+    // An iOS 26 partial sheet: it floats clear of the screen's edges with
+    // every corner rounded, no rule under its header, and Done as the one
+    // prominent action.
     return showCupertinoModalPopup<void>(
       context: context,
       builder: (sheetContext) {
         final colors = ShopColors.of(sheetContext);
-        return Container(
-          decoration: BoxDecoration(
-            color: colors.card,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(Radii.card)),
-          ),
-          child: SafeArea(
-            top: false,
+        final bottom = MediaQuery.paddingOf(sheetContext).bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(Space.sm, 0, Space.sm, bottom > 0 ? bottom : Space.sm),
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(Radii.sheet)),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: Space.xs),
+                  padding: const EdgeInsets.fromLTRB(Space.xs, Space.md, Space.lg, 0),
                   child: Row(
                     children: [
                       CupertinoButton(
@@ -108,17 +110,18 @@ class PeriodBar extends StatelessWidget {
                           onChanged(Period.current(period.kind, now));
                           Navigator.of(sheetContext).pop();
                         },
-                        child: Text(byMonth ? 'This month' : 'Today'),
+                        child: Text(byMonth ? 'This Month' : 'Today'),
                       ),
                       const Spacer(),
-                      CupertinoButton(
+                      CupertinoButton.filled(
+                        sizeStyle: CupertinoButtonSize.medium,
+                        borderRadius: BorderRadius.circular(Radii.pill),
                         onPressed: () => Navigator.of(sheetContext).pop(),
                         child: const Text('Done', style: TextStyle(fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ),
                 ),
-                Container(height: 0.5, color: colors.hairline),
                 SizedBox(
                   height: 216,
                   child: CupertinoDatePicker(

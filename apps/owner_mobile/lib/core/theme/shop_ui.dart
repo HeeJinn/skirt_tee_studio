@@ -23,12 +23,14 @@ abstract final class Space {
   static const gutter = 16.0;
 }
 
-/// Radii by role, not one global value: cards are soft, list groups follow
-/// iOS, and small tokens (pills, badges) are tighter or fully round.
+/// Radii by role, as iOS 26 rounds them: cards and list groups share one
+/// generous radius, sheets float with a larger one, photos sit between, and
+/// small tokens (pills, badges) are tighter or fully round.
 abstract final class Radii {
-  static const card = 16.0;
-  static const group = 12.0;
-  static const photo = 12.0;
+  static const card = 24.0;
+  static const group = 24.0;
+  static const photo = 18.0;
+  static const sheet = 34.0;
   static const badge = 7.0;
   static const pill = 999.0;
 }

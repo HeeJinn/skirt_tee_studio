@@ -1,8 +1,8 @@
 // Visual QA harness — renders the owner app's screens (light + dark) at
 // iPhone 15 size to PNG, so UI changes can be reviewed as images rather
-// than inferred from code. Windows-only: Segoe UI stands in for iOS's San
-// Francisco (not installed on Windows), and fonts are read from
-// C:\Windows\Fonts.
+// than inferred from code. Windows-only: the app sets its text in Inter off
+// Apple devices (see uiFontFamily), loaded here from the app's assets; the
+// Georgia titles come from C:\Windows\Fonts.
 //
 //   flutter test tool/ui_snapshots_test.dart
 //
@@ -262,9 +262,11 @@ void main() {
   setUpAll(() async {
     Directory(_outDir).createSync(recursive: true);
     const fonts = r'C:\Windows\Fonts';
-    const segoe = ['$fonts\\segoeui.ttf', '$fonts\\seguisb.ttf', '$fonts\\segoeuib.ttf'];
-    for (final family in ['CupertinoSystemText', 'CupertinoSystemDisplay', 'FlutterTest', '.SF UI Text', '.SF UI Display']) {
-      await _loadFont(family, segoe);
+    // Inter's four weights, as the app bundles them; also standing in for
+    // anything that still asks for the system font.
+    final inter = [for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold']) 'assets/fonts/Inter-$w.ttf'];
+    for (final family in ['Inter', 'CupertinoSystemText', 'CupertinoSystemDisplay', 'FlutterTest']) {
+      await _loadFont(family, inter);
     }
     // The serif of the large titles (on iPhones too).
     await _loadFont('Georgia', ['$fonts\\georgia.ttf', '$fonts\\georgiab.ttf']);
@@ -349,9 +351,9 @@ void main() {
       await _tab(tester, 'More');
       await _snap(tester, 'more_$suffix');
 
-      await tester.tap(find.text('Sign out'));
+      await tester.tap(find.text('Sign Out'));
       await _snap(tester, 'sign_out_sheet_$suffix');
-      await tester.tap(find.descendant(of: find.byType(CupertinoActionSheet), matching: find.text('Sign out')));
+      await tester.tap(find.descendant(of: find.byType(CupertinoActionSheet), matching: find.text('Sign Out')));
       await _snap(tester, 'sign_in_$suffix');
       await tester.enterText(find.widgetWithText(CupertinoTextField, 'Email'), 'ana@skirtandtee.ph');
       await tester.pump();
