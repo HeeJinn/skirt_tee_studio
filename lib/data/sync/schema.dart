@@ -1,3 +1,8 @@
+// PowerSync's attachment queue is marked experimental; it's pinned by
+// pubspec.lock, so an API change shows up as a compile error on upgrade.
+// ignore_for_file: experimental_member_use
+
+import 'package:powersync/attachments/attachments.dart';
 import 'package:powersync/powersync.dart';
 
 /// The app's local tables. PowerSync adds the text `id` column to every
@@ -8,7 +13,7 @@ import 'package:powersync/powersync.dart';
 /// Synced tables mirror the Supabase schema (snake_case there, aliased back
 /// to these camelCase names by supabase/powersync/sync-rules.yaml). Changing
 /// a synced table means changing the migration and sync rules too.
-const appSchema = Schema([
+final appSchema = Schema([
   Table('items', [
     Column.text('name'),
     Column.text('category'),
@@ -90,4 +95,6 @@ const appSchema = Schema([
   ]),
   // Per-PC preferences, keyed by name: themePreset, appearanceMode.
   Table.localOnly('device_settings', [Column.text('value')]),
+  // Which item photos still need uploading or downloading (ItemPhotoSync).
+  AttachmentsQueueTable(),
 ]);

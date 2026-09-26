@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config/cloud_config.dart';
 import '../../domain/entities/cloud_sync.dart';
 import '../../domain/repositories/cloud_sync_repository.dart';
+import '../datasources/local/item_image_storage.dart';
+import 'item_photo_sync.dart';
 import 'supabase_connector.dart';
 
 class CloudSyncRepositoryImpl implements CloudSyncRepository {
@@ -17,6 +19,7 @@ class CloudSyncRepositoryImpl implements CloudSyncRepository {
   static const shopName = 'The Skirt & Tee Studio';
 
   SupabaseClient? _client;
+  ItemPhotoSync? _photos;
   final _states = StreamController<CloudSyncState>.broadcast();
   final _remoteChanges = StreamController<void>.broadcast();
   CloudSyncState _current = CloudSyncState.notConfigured;
@@ -40,6 +43,7 @@ class CloudSyncRepositoryImpl implements CloudSyncRepository {
 
     await Supabase.initialize(url: _config.supabaseUrl, publishableKey: _config.supabasePublishableKey);
     _client = Supabase.instance.client;
+    _photos = ItemPhotoSync(_db, SupabasePhotoStorage(_client!), ItemImageStorage.instance.directory);
 
     _db.statusStream.listen(_onSyncStatus);
     _db.watch('SELECT COUNT(*) AS n FROM ps_crud', triggerOnTables: const ['ps_crud']).listen((rows) {
@@ -75,12 +79,16 @@ class CloudSyncRepositoryImpl implements CloudSyncRepository {
 
   @override
   Future<void> signOut() async {
+    await _photos?.stop();
     await _db.disconnect();
     await _client?.auth.signOut();
     _publish();
   }
 
-  Future<void> _connect() => _db.connect(connector: SupabaseConnector(_client!, _config.powerSyncUrl));
+  Future<void> _connect() async {
+    await _db.connect(connector: SupabaseConnector(_client!, _config.powerSyncUrl));
+    await _photos!.start();
+  }
 
   void _onSyncStatus(SyncStatus status) {
     _syncStatus = status;

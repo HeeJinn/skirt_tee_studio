@@ -27,11 +27,14 @@ class ItemImageStorage {
   @visibleForTesting
   void useDirectory(String path) => _directory = path;
 
-  String pathFor(String key) {
+  /// This PC's images folder.
+  String get directory {
     final dir = _directory;
     if (dir == null) throw StateError('ItemImageStorage.init() must run before items are read.');
-    return p.join(dir, key);
+    return dir;
   }
+
+  String pathFor(String key) => p.join(directory, key);
 
   static String keyFor(String path) => p.basename(path);
 
