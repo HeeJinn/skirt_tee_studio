@@ -1,4 +1,5 @@
 import '../../data/datasources/local/database_service.dart';
+import '../../data/datasources/local/item_image_storage.dart';
 import '../../data/datasources/local/item_local_data_source.dart';
 import '../../data/datasources/local/reservation_local_data_source.dart';
 import '../../data/datasources/local/sale_local_data_source.dart';
@@ -10,13 +11,17 @@ import '../../data/repositories/sale_repository_impl.dart';
 import '../../data/repositories/settings_repository_impl.dart';
 import '../../data/repositories/staff_repository_impl.dart';
 import '../../data/repositories/stock_repository_impl.dart';
+import '../../data/sync/cloud_sync_repository_impl.dart';
+import '../../data/sync/legacy_import.dart';
 import '../../presentation/viewmodels/cart_view_model.dart';
+import '../../presentation/viewmodels/cloud_sync_view_model.dart';
 import '../../presentation/viewmodels/inventory_view_model.dart';
 import '../../presentation/viewmodels/money_view_model.dart';
 import '../../presentation/viewmodels/reservation_view_model.dart';
 import '../../presentation/viewmodels/sales_view_model.dart';
 import '../../presentation/viewmodels/session_view_model.dart';
 import '../../presentation/viewmodels/settings_view_model.dart';
+import '../config/cloud_config.dart';
 
 /// Composition root: wires data sources -> repositories -> ViewModels.
 /// Manual DI is deliberate here (matches the project's "deliberately
@@ -30,6 +35,7 @@ class Injector {
     required this.settingsViewModel,
     required this.sessionViewModel,
     required this.moneyViewModel,
+    required this.cloudSyncViewModel,
   });
 
   final InventoryViewModel inventoryViewModel;
@@ -39,9 +45,12 @@ class Injector {
   final SettingsViewModel settingsViewModel;
   final SessionViewModel sessionViewModel;
   final MoneyViewModel moneyViewModel;
+  final CloudSyncViewModel cloudSyncViewModel;
 
   static Future<Injector> create() async {
     final db = await DatabaseService.instance.database;
+    await ItemImageStorage.instance.init();
+    await LegacyImport.runIfNeeded(db, (await DatabaseService.instance.supportDirectory).path);
 
     final itemRepository = ItemRepositoryImpl(ItemLocalDataSourceImpl(db));
     final saleRepository = SaleRepositoryImpl(SaleLocalDataSourceImpl(db));
@@ -56,14 +65,20 @@ class Injector {
     final settingsViewModel = SettingsViewModel(settingsRepository);
     final sessionViewModel = SessionViewModel(StaffRepositoryImpl(db));
     final moneyViewModel = MoneyViewModel(MoneyRepositoryImpl(db), stockRepository);
-    await Future.wait([
-      inventoryViewModel.load(),
-      reservationViewModel.load(),
-      salesViewModel.load(),
-      settingsViewModel.load(),
-      sessionViewModel.load(),
-      moneyViewModel.load(),
-    ]);
+
+    // Everything that shows shop data; staff sign-in stays on this PC.
+    Future<void> loadShopData() => Future.wait([
+          inventoryViewModel.load(),
+          reservationViewModel.load(),
+          salesViewModel.load(),
+          settingsViewModel.load(),
+          moneyViewModel.load(),
+        ]);
+    final cloudSyncViewModel = CloudSyncViewModel(
+      CloudSyncRepositoryImpl(db, CloudConfig.fromEnvironment),
+      onRemoteChanges: loadShopData,
+    );
+    await Future.wait([loadShopData(), sessionViewModel.load(), cloudSyncViewModel.load()]);
 
     return Injector._(
       inventoryViewModel: inventoryViewModel,
@@ -73,6 +88,7 @@ class Injector {
       settingsViewModel: settingsViewModel,
       sessionViewModel: sessionViewModel,
       moneyViewModel: moneyViewModel,
+      cloudSyncViewModel: cloudSyncViewModel,
     );
   }
 }

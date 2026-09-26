@@ -24,6 +24,7 @@ class SkirtAndTeeApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: injector.settingsViewModel),
         ChangeNotifierProvider.value(value: injector.sessionViewModel),
         ChangeNotifierProvider.value(value: injector.moneyViewModel),
+        ChangeNotifierProvider.value(value: injector.cloudSyncViewModel),
       ],
       // Only a theme choice rebuilds the app — not other settings changes.
       child: Selector<SettingsViewModel, (ThemePreset, ThemeMode)>(

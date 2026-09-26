@@ -3,18 +3,22 @@ import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/appearance.dart';
+import '../../viewmodels/session_view_model.dart';
 import '../../viewmodels/settings_view_model.dart';
 import '../../widgets/list_surface.dart';
 import '../../widgets/screen_header.dart';
+import 'widgets/cloud_sync_panel.dart';
 
 /// Appearance for this computer: light/dark mode and the color theme.
-/// Changes apply the moment they're picked — there's no save step.
+/// Changes apply the moment they're picked — there's no save step. Owners
+/// also get the shop's cloud backup here.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsViewModel>();
+    final isOwner = context.select<SessionViewModel, bool>((s) => s.isOwner);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(32, 32, 32, 0),
@@ -29,6 +33,11 @@ class SettingsScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
               children: [
+                if (isOwner) ...[
+                  const SectionLabel('Cloud backup'),
+                  const Align(alignment: Alignment.centerLeft, child: CloudSyncPanel()),
+                  const SizedBox(height: AppSpacing.md),
+                ],
                 const SectionLabel('Mode'),
                 _ModeToggle(
                   selected: settings.appearanceMode,

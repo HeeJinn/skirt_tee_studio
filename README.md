@@ -1,6 +1,6 @@
 # The Skirt & Tee Studio — POS + Inventory
 
-A desktop point-of-sale and inventory app for **The Skirt & Tee Studio**, a small clothing boutique. It runs offline on a single shop computer, stores everything in a local SQLite database, and is built with Flutter.
+A desktop point-of-sale and inventory app for **The Skirt & Tee Studio**, a small clothing boutique. It runs on the shop computer and keeps working offline. Once an owner connects it, it also backs everything up to the cloud (Supabase). It's built with Flutter.
 
 ![POS screen](docs/screenshots/pos.png)
 
@@ -15,6 +15,7 @@ A desktop point-of-sale and inventory app for **The Skirt & Tee Studio**, a smal
 - **Customers**: repeat customers grouped from reservation history, with their pickup rate.
 - **Staff and roles**: PIN sign-in with owner and cashier roles, a lock button, and an activity log of every sale, void, and stock or price change.
 - **Settings**: six color themes and a System / Light / Dark switch.
+- **Cloud backup** (owners only): connect the shop computer to the cloud in **Settings**. Every sale, stock change, money entry, and item photo is copied up whenever the internet is on. If the computer breaks, sign in on a new one and everything comes back.
 - **Backup and export**: one-click database backup, plus CSV export of inventory and sales.
 
 ## Themes
@@ -47,7 +48,31 @@ flutter run -d windows
 
 **First sign-in:** on first launch, the app asks you to set up the owner account with a PIN. After that, the owner can add cashiers from the **Staff** screen.
 
-**Where your data lives:** the database is a local SQLite file on the shop computer. Use **Back up data** in the sidebar to save a copy somewhere safe.
+**Where your data lives:** on the shop computer, in a local database that works without internet. If an owner has connected **Cloud backup**, it's copied to Supabase too. **Back up data** in the sidebar still saves a local copy.
+
+### Cloud backup setup
+
+Cloud backup needs a Supabase project and a PowerSync instance. A build without them runs offline-only, exactly as before.
+
+1. **Supabase:** apply the schema with the Supabase CLI (installed per-project: `npm install`), then create each owner's login under **Authentication → Users**:
+
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <project-ref>
+   npx supabase db push
+   ```
+
+   `npx supabase db query --linked -f supabase/tests/smoke_test.sql` checks the live schema and rolls itself back. It should end with `SMOKE TEST PASSED`.
+2. **PowerSync:** create an instance connected to the Supabase database, turn on Supabase Auth, and deploy [`supabase/powersync/sync-rules.yaml`](supabase/powersync/sync-rules.yaml) as its sync rules.
+3. **App config:** copy `cloud.example.json` to `cloud.json` and fill in the Supabase URL, the **publishable** key, and the PowerSync URL. `cloud.json` is gitignored. Never put the Supabase *secret* key in it: the app ships to the shop computer, and the secret key bypasses every access rule.
+
+   ```bash
+   flutter run -d windows --dart-define-from-file=cloud.json
+   ```
+
+**First run after updating:** the app copies the old local database into the new one once. The original file stays untouched, and a copy is saved next to it as `skirt_tee_studio.pre-cloud.db`.
+
+**Restoring on a new computer:** install the app, set up the owner PIN (staff PINs never leave the computer they were made on), then **Settings → Connect to cloud** with the owner login. Everything downloads, photos included.
 
 ## Development
 
@@ -67,7 +92,7 @@ The app uses MVVM with `provider`, in three layers:
 lib/
   core/           theme (colors, presets, type scale), routing, DI, utilities
   domain/         entities and repository interfaces (pure Dart)
-  data/           SQLite data sources and repository implementations
+  data/           local data sources, repository implementations, and cloud sync (data/sync)
   presentation/   screens, view models, and shared widgets
 ```
 
@@ -75,4 +100,4 @@ Architecture, database, and sequence diagrams are in [`docs/diagrams`](docs/diag
 
 ## Tech
 
-Flutter (desktop) · `provider` · `sqflite_common_ffi` · `fl_chart` · `file_selector` · `window_manager` · `lottie`
+Flutter (desktop) · `provider` · PowerSync (`powersync`, `sqlite_async`) · Supabase (`supabase_flutter`) · `fl_chart` · `file_selector` · `window_manager` · `lottie`

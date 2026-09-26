@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:skirt_tee_studio/data/datasources/local/item_image_storage.dart';
 import 'package:skirt_tee_studio/data/datasources/local/item_local_data_source.dart';
 import 'package:skirt_tee_studio/data/models/item_model.dart';
 
@@ -43,7 +44,7 @@ void main() {
     expect(all.single.isLowStock(5), isTrue);
   });
 
-  test('imagePath round-trips through insert/getAll, and defaults to null', () async {
+  test('a photo is stored by file name and read back as a path on this PC', () async {
     const withPhoto = ItemModel(
       id: '1',
       name: 'Basic Tee',
@@ -63,7 +64,8 @@ void main() {
     await dataSource.insert(withoutPhoto);
 
     final all = await dataSource.getAll();
-    expect(all.firstWhere((i) => i.id == '1').imagePath, '/app support/item_images/abc.png');
+    // Only the file name is stored (and synced); the folder is this PC's.
+    expect(all.firstWhere((i) => i.id == '1').imagePath, ItemImageStorage.instance.pathFor('abc.png'));
     expect(all.firstWhere((i) => i.id == '2').imagePath, isNull);
   });
 

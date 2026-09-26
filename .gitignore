@@ -46,3 +46,9 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Cloud project settings (see cloud.example.json) — this repo is public
+cloud.json
+
+# Supabase CLI (installed per-project with npm)
+node_modules/

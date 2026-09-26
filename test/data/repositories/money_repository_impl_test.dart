@@ -1,13 +1,33 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:skirt_tee_studio/data/repositories/money_repository_impl.dart';
 import 'package:skirt_tee_studio/domain/entities/money_entry.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 
 import '../../test_helpers.dart';
 
 void main() {
+  late SqliteConnection db;
   late MoneyRepositoryImpl repo;
 
-  setUp(() async => repo = MoneyRepositoryImpl(await openTestDatabase()));
+  setUp(() async {
+    db = await openTestDatabase();
+    repo = MoneyRepositoryImpl(db);
+  });
+
+  test('the books start date is stamped once and then kept', () async {
+    final first = await repo.booksStartedAt();
+    expect(await repo.booksStartedAt(), first);
+  });
+
+  test('a sync that drops the start date does not make it re-stamp over and over', () async {
+    final first = await repo.booksStartedAt();
+    // What a download without the setting does to this PC's copy.
+    await db.execute('DELETE FROM shop_settings');
+
+    expect(await repo.booksStartedAt(), first, reason: 'same date back, no new stamp');
+    final queued = await db.getAll("SELECT data FROM ps_crud WHERE data LIKE '%booksStartedAt%'");
+    expect(queued.where((r) => (r['data'] as String).contains('"PUT"')), hasLength(1));
+  });
 
   test('entries round-trip every field, newest first', () async {
     await repo.add(MoneyEntry(

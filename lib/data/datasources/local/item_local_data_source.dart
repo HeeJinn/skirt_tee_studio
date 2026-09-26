@@ -1,6 +1,7 @@
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 
 import '../../models/item_model.dart';
+import 'sql_helpers.dart';
 
 abstract class ItemLocalDataSource {
   Future<List<ItemModel>> getAll();
@@ -11,7 +12,7 @@ abstract class ItemLocalDataSource {
 
 class ItemLocalDataSourceImpl implements ItemLocalDataSource {
   ItemLocalDataSourceImpl(this._db);
-  final Database _db;
+  final SqliteConnection _db;
 
   @override
   Future<List<ItemModel>> getAll() async {

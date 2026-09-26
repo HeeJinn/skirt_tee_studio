@@ -1,23 +1,33 @@
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 
 import '../../domain/entities/money_entry.dart';
 import '../datasources/local/database_service.dart';
 import '../../domain/repositories/money_repository.dart';
+import '../datasources/local/sql_helpers.dart';
 import '../models/money_models.dart';
 
 class MoneyRepositoryImpl implements MoneyRepository {
   MoneyRepositoryImpl(this._db);
-  final Database _db;
+  final SqliteConnection _db;
 
-  /// Stamped by the schema; the fallback only covers a database whose stamp
-  /// went missing, and fixes the date from the first time it's asked.
+  DateTime? _stampedThisRun;
+
+  /// Stamped the first time it's asked, or carried over from the pre-cloud
+  /// database. The cloud keeps the first stamp it ever receives, so a fresh
+  /// install that stamps "today" before its first sync is corrected by it.
+  ///
+  /// Stamps at most once per run: screens reload after every download, so if
+  /// a sync ever leaves the stamp missing, stamping again each time would
+  /// loop (stamp, upload, download without it, reload, stamp…).
   @override
   Future<DateTime> booksStartedAt() async {
     const key = DatabaseService.booksStartedAtKey;
-    final rows = await _db.query('settings', where: 'key = ?', whereArgs: [key]);
+    final rows = await _db.query('shop_settings', where: 'id = ?', whereArgs: [key]);
     if (rows.isNotEmpty) return DateTime.parse(rows.single['value'] as String);
+    if (_stampedThisRun case final stamped?) return stamped;
     final now = DateTime.now();
-    await _db.insert('settings', {'key': key, 'value': now.toIso8601String()});
+    _stampedThisRun = now;
+    await _db.insert('shop_settings', {'id': key, 'value': now.toIso8601String()});
     return now;
   }
 

@@ -1,8 +1,9 @@
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 
 import '../../../domain/costing.dart';
 import '../../../domain/entities/sale.dart';
 import '../../models/sale_model.dart';
+import 'sql_helpers.dart';
 
 abstract class SaleLocalDataSource {
   Future<void> recordSale(SaleModel model);
@@ -16,20 +17,20 @@ abstract class SaleLocalDataSource {
 
 class SaleLocalDataSourceImpl implements SaleLocalDataSource {
   SaleLocalDataSourceImpl(this._db);
-  final Database _db;
+  final SqliteConnection _db;
 
   /// Cost is read from the item inside the transaction rather than trusted
   /// from the caller, so every path that records a sale (POS, reservation
   /// pickup) books the same cost of goods.
   @override
   Future<void> recordSale(SaleModel model) async {
-    await _db.transaction((txn) async {
+    await _db.writeTransaction((txn) async {
       await txn.insert('sales', model.toMap());
       for (final line in model.lineItems) {
         final itemRows = await txn.query('items', columns: ['unitCost'], where: 'id = ?', whereArgs: [line.itemId]);
         final unitCost = itemRows.isEmpty ? null : (itemRows.single['unitCost'] as num?)?.toDouble();
         await txn.insert('sale_line_items', {...saleLineItemToMap(model.id, line), 'unitCost': unitCost});
-        await txn.rawUpdate(
+        await txn.execute(
           'UPDATE items SET qtyOnHand = qtyOnHand - ? WHERE id = ?',
           [line.qty, line.itemId],
         );
@@ -62,7 +63,7 @@ class SaleLocalDataSourceImpl implements SaleLocalDataSource {
 
   @override
   Future<void> voidSale(String saleId) async {
-    await _db.transaction((txn) async {
+    await _db.writeTransaction((txn) async {
       final lineRows = await txn.query('sale_line_items', where: 'saleId = ?', whereArgs: [saleId]);
       for (final row in lineRows) {
         final itemId = row['itemId'] as String;
@@ -78,7 +79,7 @@ class SaleLocalDataSourceImpl implements SaleLocalDataSource {
           addedQty: qty,
           addedCost: (row['unitCost'] as num?)?.toDouble(),
         );
-        await txn.rawUpdate(
+        await txn.execute(
           'UPDATE items SET qtyOnHand = qtyOnHand + ?, unitCost = ? WHERE id = ?',
           [qty, unitCost, itemId],
         );

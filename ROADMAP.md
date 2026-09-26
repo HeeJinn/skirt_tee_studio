@@ -1,6 +1,6 @@
 # Roadmap — The Skirt & Tee Studio
 
-POS + Inventory system for The Skirt & Tee Studio. Flutter desktop app, local SQLite storage, MVVM (`provider`).
+POS + Inventory system for The Skirt & Tee Studio. Flutter desktop app, local-first storage (PowerSync SQLite) with Supabase cloud backup, MVVM (`provider`).
 
 ## Current state
 
@@ -43,7 +43,7 @@ Phase 2 is done.
 ## Phase 3 — Scaling up (longer-term)
 
 - [x] **Multi-user accounts with roles** — PIN sign-in (salted, hashed), owner/cashier roles (cashiers: POS, reservations, read-only inventory), Lock button, Staff screen with an activity log of every sale, void, stock/price edit, and reservation change. Not yet: PIN reset (remove + re-add for now), auto-lock on idle.
-- [ ] **Cloud sync or multi-device support** — today the app is single-device only.
+- [x] **Cloud sync** — the shop computer keeps a local PowerSync database and syncs it with Supabase once an owner connects in Settings. Selling works offline; changes upload when the internet is back, and a new computer restores everything by signing in. Item photos sync to Supabase Storage. Staff PINs and per-computer theme stay local. Not yet: removing replaced photos from the cloud, and a second owner joining the same shop from the app (added by hand in Supabase for now). Multi-device writes arrive with the mobile app (Phase 5).
 - [ ] **Returns/refunds/exchange flow.**
 - [x] **Customer records** — customers grouped by contact from reservation history (not a separate database); a "Customers" screen shows each one's reservation history and pickup rate. Doesn't cover anonymous POS walk-in sales, which carry no customer info at all.
 - [ ] **Restocking/purchase-order workflow** from suppliers.
@@ -59,6 +59,19 @@ The owners can't tell how much they've put into the shop versus how much it has 
 - [ ] **D. Later.** Slow-moving stock, margin by item/category, CSV export for an accountant, end-of-day drawer count.
 
 The books start the day this update is installed (the date is saved once and shown on the Money screen); sales from before then don't count toward profit or payback. Stock on hand before tracking started has no recorded cost and counts as ₱0, since the money that bought it isn't counted either. Until that stock sells through, margins look higher than they really are. The profit report calls this out.
+
+## Phase 5 — Owner mobile app (planned)
+
+An iOS and Android app for the owners only, reading and writing the same Supabase data as the shop computer. Selling stays on the shop computer; there's no mobile POS.
+
+- **Today:** today's sales and profit against the same weekday last week, a live sales feed, and a "needs attention" list (low stock, reservations due, voids, shop computer offline).
+- **Sales:** history with a detail view, and voiding a sale.
+- **Stock:** inventory with camera photos, adjust stock, and receive a stock lot (with a photo of the supplier's receipt).
+- **Money:** payback, profit, sales vs costs, and the money log (with receipt photos on expenses).
+- **More:** reservations, customers, reports (shared as an image or CSV), staff activity and PIN reset, and settings.
+- **Notifications:** daily close summary, low stock, voids, reservations due, shop computer not syncing.
+
+Before it can write data, stock-changing actions (sales, voids, receiving lots) need to move into server functions, so two devices can't both change the same item's stock at once. Today only the shop computer writes, so its own logic is safe.
 
 ---
 *This file tracks planned work, not a contractual timeline — reprioritize freely as the store's needs change.*

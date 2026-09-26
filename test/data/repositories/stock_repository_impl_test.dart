@@ -1,17 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:skirt_tee_studio/data/datasources/local/item_local_data_source.dart';
+import 'package:skirt_tee_studio/data/datasources/local/sql_helpers.dart';
 import 'package:skirt_tee_studio/data/models/item_model.dart';
 import 'package:skirt_tee_studio/data/repositories/stock_repository_impl.dart';
 import 'package:skirt_tee_studio/domain/entities/item.dart';
 import 'package:skirt_tee_studio/domain/entities/money_entry.dart';
 import 'package:skirt_tee_studio/domain/entities/stock.dart';
 import 'package:skirt_tee_studio/domain/repositories/stock_repository.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 
 import '../../test_helpers.dart';
 
 void main() {
-  late Database db;
+  late SqliteConnection db;
   late ItemLocalDataSourceImpl items;
   late StockRepositoryImpl stock;
 

@@ -1,0 +1,56 @@
+# PowerSync sync config — paste into the PowerSync dashboard (instance →
+# Sync Streams), then Validate and Deploy.
+#
+# One stream: a signed-in member downloads every row of their own shop.
+# It's auto-subscribed, since the app doesn't subscribe to streams itself.
+# Columns are aliased back to the desktop app's camelCase names so its SQL
+# didn't have to change; shop_id stays server-side.
+config:
+  edition: 3
+
+streams:
+  shop:
+    auto_subscribe: true
+    queries:
+      - >-
+        SELECT id, name, category, unit_price AS "unitPrice", qty_on_hand AS "qtyOnHand",
+          is_bargain AS "isBargain", image_key AS "imageKey", unit_cost AS "unitCost"
+        FROM items
+        WHERE shop_id IN (SELECT shop_id FROM shop_members WHERE user_id = auth.user_id())
+      - >-
+        SELECT id, date_time AS "dateTime", payment_method AS "paymentMethod",
+          amount_tendered AS "amountTendered"
+        FROM sales
+        WHERE shop_id IN (SELECT shop_id FROM shop_members WHERE user_id = auth.user_id())
+      - >-
+        SELECT id, sale_id AS "saleId", item_id AS "itemId", item_name AS "itemName",
+          unit_price AS "unitPrice", qty, unit_cost AS "unitCost"
+        FROM sale_line_items
+        WHERE shop_id IN (SELECT shop_id FROM shop_members WHERE user_id = auth.user_id())
+      - >-
+        SELECT id, customer_name AS "customerName", contact, item_id AS "itemId",
+          item_name AS "itemName", pickup_date AS "pickupDate", status
+        FROM reservations
+        WHERE shop_id IN (SELECT shop_id FROM shop_members WHERE user_id = auth.user_id())
+      - >-
+        SELECT id, value
+        FROM shop_settings
+        WHERE shop_id IN (SELECT shop_id FROM shop_members WHERE user_id = auth.user_id())
+      - >-
+        SELECT id, at, kind, amount, category, paid_from AS "paidFrom", person, note
+        FROM money_entries
+        WHERE shop_id IN (SELECT shop_id FROM shop_members WHERE user_id = auth.user_id())
+      - >-
+        SELECT id, at, supplier, items_cost AS "itemsCost", fees, paid_from AS "paidFrom",
+          person, note
+        FROM stock_lots
+        WHERE shop_id IN (SELECT shop_id FROM shop_members WHERE user_id = auth.user_id())
+      - >-
+        SELECT id, at, item_id AS "itemId", item_name AS "itemName", type, qty,
+          unit_cost AS "unitCost", reason, lot_id AS "lotId", note
+        FROM stock_movements
+        WHERE shop_id IN (SELECT shop_id FROM shop_members WHERE user_id = auth.user_id())
+      - >-
+        SELECT id, at, staff_name AS "staffName", action
+        FROM audit_log
+        WHERE shop_id IN (SELECT shop_id FROM shop_members WHERE user_id = auth.user_id())

@@ -1,15 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:skirt_tee_studio/data/datasources/local/item_local_data_source.dart';
 import 'package:skirt_tee_studio/data/datasources/local/sale_local_data_source.dart';
+import 'package:skirt_tee_studio/data/datasources/local/sql_helpers.dart';
 import 'package:skirt_tee_studio/data/models/item_model.dart';
 import 'package:skirt_tee_studio/data/models/sale_model.dart';
 import 'package:skirt_tee_studio/domain/entities/sale.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 
 import '../../../test_helpers.dart';
 
 void main() {
-  late Database db;
+  late SqliteConnection db;
   late ItemLocalDataSourceImpl itemDataSource;
   late SaleLocalDataSourceImpl saleDataSource;
 
