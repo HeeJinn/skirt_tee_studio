@@ -41,8 +41,11 @@ Pick a theme in **Settings** and it applies right away. Each theme has its own l
 
 **You need:** the [Flutter SDK](https://docs.flutter.dev/get-started/install) (Dart 3.13 or newer), plus Visual Studio with the "Desktop development with C++" workload for Windows builds.
 
+The repo is a Dart workspace: the desktop app lives in `apps/desktop`, and the code it will share with the planned owner mobile app lives in `packages/shop_core`. One `flutter pub get` at the root sets up both.
+
 ```bash
 flutter pub get
+cd apps/desktop
 flutter run -d windows
 ```
 
@@ -64,10 +67,11 @@ Cloud backup needs a Supabase project and a PowerSync instance. A build without 
 
    `npx supabase db query --linked -f supabase/tests/smoke_test.sql` checks the live schema and rolls itself back. It should end with `SMOKE TEST PASSED`.
 2. **PowerSync:** create an instance connected to the Supabase database, turn on Supabase Auth, and deploy [`supabase/powersync/sync-rules.yaml`](supabase/powersync/sync-rules.yaml) as its sync rules.
-3. **App config:** copy `cloud.example.json` to `cloud.json` and fill in the Supabase URL, the **publishable** key, and the PowerSync URL. `cloud.json` is gitignored. Never put the Supabase *secret* key in it: the app ships to the shop computer, and the secret key bypasses every access rule.
+3. **App config:** at the repo root, copy `cloud.example.json` to `cloud.json` and fill in the Supabase URL, the **publishable** key, and the PowerSync URL. `cloud.json` is gitignored. Never put the Supabase *secret* key in it: the app ships to the shop computer, and the secret key bypasses every access rule.
 
    ```bash
-   flutter run -d windows --dart-define-from-file=cloud.json
+   cd apps/desktop
+   flutter run -d windows --dart-define-from-file=../../cloud.json
    ```
 
 **First run after updating:** the app copies the old local database into the new one once. The original file stays untouched, and a copy is saved next to it as `skirt_tee_studio.pre-cloud.db`.
@@ -76,24 +80,29 @@ Cloud backup needs a Supabase project and a PowerSync instance. A build without 
 
 ## Development
 
+Run these inside `packages/shop_core` or `apps/desktop`; each has its own tests:
+
 ```bash
 flutter test          # unit and widget tests
 flutter analyze       # lints
-flutter build windows # release build
+flutter build windows # release build (apps/desktop only)
 ```
 
-To review UI changes as images, `flutter test tool/ui_snapshots_test.dart` renders every screen in light and dark to `build/ui_snapshots/`. It's Windows-only, since it reads the real Windows fonts.
+To review UI changes as images, run `flutter test tool/ui_snapshots_test.dart` in `apps/desktop`. It renders every screen in light and dark to `build/ui_snapshots/`. It's Windows-only, since it reads the real Windows fonts.
 
 ### Project structure
 
-The app uses MVVM with `provider`, in three layers:
-
 ```
-lib/
-  core/           theme (colors, presets, type scale), routing, DI, utilities
-  domain/         entities and repository interfaces (pure Dart)
-  data/           local data sources, repository implementations, and cloud sync (data/sync)
-  presentation/   screens, view models, and shared widgets
+apps/desktop/         the Windows POS app (MVVM with `provider`)
+  lib/core/           routing, DI, utilities
+  lib/data/sync/      one-time import of the pre-cloud database
+  lib/presentation/   screens, view models, and widgets
+packages/shop_core/   shared by the desktop app and the planned mobile app
+  lib/domain/         entities and repository interfaces
+  lib/data/           local database, repositories, and cloud sync (data/sync)
+  lib/calculations/   profit, payback, reports, and customer/sales grouping
+  lib/core/           cloud config and the theme presets
+supabase/             database migrations, PowerSync sync config, smoke test
 ```
 
 Architecture, database, and sequence diagrams are in [`docs/diagrams`](docs/diagrams). The roadmap and what's planned next are in [`ROADMAP.md`](ROADMAP.md).
