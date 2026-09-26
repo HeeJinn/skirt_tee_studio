@@ -7,15 +7,17 @@ import 'core/theme/cupertino_theme.dart';
 import 'presentation/screens/auth/not_configured_screen.dart';
 import 'presentation/screens/auth/sign_in_screen.dart';
 import 'presentation/shell/home_tabs.dart';
+import 'presentation/viewmodels/sales_view_model.dart';
 import 'presentation/viewmodels/today_view_model.dart';
 
 /// The owner app: sign in with the shop's owner account, then the shop's
 /// numbers in five tabs. iOS widgets only.
 class OwnerApp extends StatelessWidget {
-  const OwnerApp({super.key, required this.cloudSync, required this.today});
+  const OwnerApp({super.key, required this.cloudSync, required this.today, required this.sales});
 
   final CloudSyncViewModel cloudSync;
   final TodayViewModel today;
+  final SalesViewModel sales;
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +25,7 @@ class OwnerApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(value: cloudSync),
         ChangeNotifierProvider.value(value: today),
+        ChangeNotifierProvider.value(value: sales),
       ],
       child: CupertinoApp(
         title: 'Skirt & Tee',

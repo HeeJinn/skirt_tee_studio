@@ -6,5 +6,9 @@ import 'core/di/injector.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final injector = await Injector.create();
-  runApp(OwnerApp(cloudSync: injector.cloudSyncViewModel, today: injector.todayViewModel));
+  runApp(OwnerApp(
+    cloudSync: injector.cloudSyncViewModel,
+    today: injector.todayViewModel,
+    sales: injector.salesViewModel,
+  ));
 }

@@ -10,7 +10,9 @@ import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 
 import '../../../core/theme/cupertino_theme.dart';
 import '../../viewmodels/today_view_model.dart';
+import '../../widgets/sale_tile.dart';
 import '../more/more_screen.dart';
+import '../sales/sale_detail_screen.dart';
 import 'today_snapshot.dart';
 
 /// How the shop is doing today, compared with the same day last week, and
@@ -368,33 +370,15 @@ class _LatestSales extends StatelessWidget {
           ? [const CupertinoListTile(title: Text('No sales yet'))]
           : [
               for (final sale in sales)
-                CupertinoListTile(
-                  title: Text(_itemsLabel(sale)),
-                  subtitle: Text(_whenAndHow(sale)),
-                  additionalInfo: Text(peso.format(sale.totalAmount)),
+                SaleTile(
+                  sale: sale,
+                  when: saleWhen(sale, day),
+                  onTap: () => Navigator.of(context).push(
+                    CupertinoPageRoute<void>(builder: (_) => SaleDetailScreen(saleId: sale.id, backLabel: 'Today')),
+                  ),
                 ),
             ],
     );
-  }
-
-  static String _itemsLabel(Sale sale) {
-    final lines = sale.lineItems;
-    if (lines.isEmpty) return 'Sale';
-    if (lines.length == 1) return lines.single.qty == 1 ? lines.single.itemName : '${lines.single.itemName} × ${lines.single.qty}';
-    return '${sale.totalItemsSold} items';
-  }
-
-  /// "2:41 PM · Cash" today, "Yesterday · GCash", or "Sep 24 · Card".
-  String _whenAndHow(Sale sale) {
-    final d = sale.dateTime;
-    final saleDay = DateTime(d.year, d.month, d.day);
-    final when = saleDay == day
-        ? DateFormat.jm().format(d)
-        : saleDay == day.subtract(const Duration(days: 1))
-            ? 'Yesterday'
-            : DateFormat('MMM d').format(d);
-    final how = sale.paymentMethod?.label;
-    return how == null ? when : '$when · $how';
   }
 }
 

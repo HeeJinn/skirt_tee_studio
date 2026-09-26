@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
 import '../screens/more/more_screen.dart';
+import '../screens/sales/sales_screen.dart';
 import '../screens/today/today_screen.dart';
 import '../widgets/tab_placeholder.dart';
 
@@ -19,11 +20,7 @@ class HomeTabs extends StatelessWidget {
 
   static Widget _page(int index) => switch (index) {
         0 => const TodayScreen(),
-        1 => const TabPlaceholder(
-            title: 'Sales',
-            icon: CupertinoIcons.doc_text,
-            message: 'Every sale, grouped by day, will show here.',
-          ),
+        1 => const SalesScreen(),
         2 => const TabPlaceholder(
             title: 'Stock',
             icon: CupertinoIcons.tag,
