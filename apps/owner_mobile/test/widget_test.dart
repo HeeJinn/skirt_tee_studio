@@ -4,12 +4,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:owner_mobile/app.dart';
+import 'package:owner_mobile/core/period.dart';
 import 'package:owner_mobile/presentation/screens/more/more_screen.dart';
 import 'package:owner_mobile/presentation/viewmodels/money_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/sales_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/stock_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/today_view_model.dart';
 import 'package:owner_mobile/presentation/widgets/ui/section.dart';
+import 'package:owner_mobile/presentation/widgets/ui/segmented_control.dart';
 import 'package:owner_mobile/presentation/widgets/ui/shop_tab_bar.dart';
 import 'package:shop_core/domain/entities/cloud_sync.dart';
 import 'package:shop_core/domain/entities/item.dart';
@@ -233,40 +235,76 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> pickRange(WidgetTester tester, String label) async {
-    // The period labels appear only in the switch.
-    await tester.tap(find.text(label));
+  Future<void> pickKind(WidgetTester tester, String label) async {
+    await tester.tap(find.descendant(of: find.byType(ShopSegmentedControl<PeriodKind>), matching: find.text(label)));
     await tester.pumpAndSettle();
   }
 
-  testWidgets("Sales opens on today's sales, grouped under the day's total", (tester) async {
+  Future<void> stepEarlier(WidgetTester tester, {int times = 1}) async {
+    for (var i = 0; i < times; i++) {
+      await tester.tap(find.bySemanticsLabel('Earlier'));
+      await tester.pumpAndSettle();
+    }
+  }
+
+  testWidgets("Sales opens on today's sales, under the day's total", (tester) async {
     await _pumpApp(tester, initial: _connected);
     await openSales(tester);
 
     expect(find.text('2 sales · 3 pieces · average ₱675'), findsOneWidget);
-    expect(find.descendant(of: find.byType(SectionHeader), matching: find.text('Today')), findsOneWidget);
+    expect(find.text('Today, Sep 26'), findsOneWidget);
+    expect(find.byType(SectionHeader), findsNothing, reason: 'one day needs no heading of its own');
     expect(find.text('Pleated skirt ×2'), findsOneWidget);
     expect(find.text('Pleated skirt'), findsOneWidget);
     expect(find.text('Basic tee ×2, Vintage blouse'), findsNothing, reason: "Tuesday's sale isn't today");
   });
 
-  testWidgets('a longer period adds earlier days, newest first', (tester) async {
+  testWidgets('stepping back a day shows that day, and the future stays out of reach', (tester) async {
     await _pumpApp(tester, initial: _connected);
     await openSales(tester);
 
-    await pickRange(tester, '7 days');
-    expect(find.text('3 sales · 6 pieces · average ₱650'), findsOneWidget);
-    expect(find.text('Tue, Sep 22'), findsOneWidget);
-    expect(find.text('Basic tee ×2, Vintage blouse'), findsOneWidget);
-    expect(find.text('Sat, Sep 19'), findsNothing);
+    expect(find.text('Today, Sep 26'), findsOneWidget);
+    expect(tester.getSemantics(find.bySemanticsLabel('Later')), isSemantics(isEnabled: false, hasEnabledState: true));
 
-    await pickRange(tester, '30 days');
+    await stepEarlier(tester);
+    expect(find.text('Yesterday, Sep 25'), findsOneWidget);
+    expect(find.text('No sales yesterday.'), findsOneWidget);
+
+    await stepEarlier(tester, times: 3);
+    expect(find.text('Tue, Sep 22'), findsWidgets);
+    expect(find.text('1 sale · 3 pieces · average ₱600'), findsOneWidget);
+    expect(find.text('Basic tee ×2, Vintage blouse'), findsOneWidget);
+  });
+
+  testWidgets('a month shows every sale in it, grouped by day, newest first', (tester) async {
+    await _pumpApp(tester, initial: _connected);
+    await openSales(tester);
+
+    await pickKind(tester, 'Month');
+    expect(find.text('September 2026'), findsOneWidget);
+    expect(find.textContaining('4 sales · 8 pieces'), findsOneWidget);
+    expect(find.text('Tue, Sep 22'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Sat, Sep 19'),
       200,
       scrollable: find.descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable)).first,
     );
     expect(find.text('Sat, Sep 19'), findsOneWidget);
+  });
+
+  testWidgets('tapping the date opens a wheel to jump to any day', (tester) async {
+    await _pumpApp(tester, initial: _connected);
+    await openSales(tester);
+    await stepEarlier(tester);
+
+    await tester.tap(find.bySemanticsLabel('Pick a day'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CupertinoDatePicker), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(CupertinoButton, 'Today'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CupertinoDatePicker), findsNothing);
+    expect(find.text('Today, Sep 26'), findsOneWidget);
   });
 
   testWidgets('a sale shows its payment, change, and what the shop made', (tester) async {
@@ -287,7 +325,7 @@ void main() {
   testWidgets('a sale with an uncosted piece says its profit reads high', (tester) async {
     await _pumpApp(tester, initial: _connected);
     await openSales(tester);
-    await pickRange(tester, '7 days');
+    await pickKind(tester, 'Month');
 
     await tester.tap(find.text('Basic tee ×2, Vintage blouse'));
     await tester.pumpAndSettle();
@@ -324,13 +362,13 @@ void main() {
 
     final navBar = find.byType(CupertinoNavigationBar);
     expect(find.descendant(of: navBar, matching: find.text('Sale')), findsOneWidget);
-    expect(find.descendant(of: navBar, matching: find.text('Today')), findsOneWidget, reason: 'the back button');
+    expect(find.bySemanticsLabel('Back to Today'), findsOneWidget, reason: 'the back button');
   });
 
   testWidgets('Sales and a sale fit on a small phone', (tester) async {
     await _pumpApp(tester, initial: _connected, size: const Size(320, 568));
     await openSales(tester);
-    await pickRange(tester, '30 days');
+    await pickKind(tester, 'Month');
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.text('Pleated skirt ×2').first);
@@ -407,6 +445,33 @@ void main() {
     expect(find.text('+14'), findsOneWidget);
   });
 
+  testWidgets("an item's full history can be narrowed to a month or a day", (tester) async {
+    await _pumpApp(tester, initial: _connected);
+    await openStock(tester);
+    await tester.tap(find.text('Pleated skirt'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('All history'), 200, scrollable: find.byType(Scrollable).last);
+    await tester.drag(find.byType(ListView), const Offset(0, -200));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('All history'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('5 sold · 14 received · 1 written off'), findsOneWidget);
+    expect(find.text('September 2026'), findsOneWidget, reason: 'everything, by month');
+
+    await pickKind(tester, 'Day');
+    expect(find.text('3 sold'), findsOneWidget, reason: "today's two sales");
+    await stepEarlier(tester);
+    expect(find.text('No changes yesterday.'), findsOneWidget);
+    await stepEarlier(tester, times: 2);
+    expect(find.text('1 written off'), findsOneWidget);
+    expect(find.textContaining('Torn hem'), findsOneWidget);
+
+    await pickKind(tester, 'Month');
+    expect(find.text('September 2026'), findsOneWidget, reason: 'the day became its month');
+    expect(find.text('Wed, Sep 23'), findsOneWidget, reason: 'a month, by day');
+  });
+
   testWidgets('an item with no cost says what it makes is unknown', (tester) async {
     await _pumpApp(tester, initial: _connected);
     await openStock(tester);
@@ -460,20 +525,26 @@ void main() {
     await openMoney(tester);
     await tester.scrollUntilVisible(find.text('Net profit'), 200, scrollable: moneyPage());
 
-    // Last 30 days, from Sep 1 (the books started after the period did).
-    expect(find.text('from Sep 1'), findsOneWidget);
+    // This month, which is also when the books started.
+    expect(find.text('September 2026'), findsOneWidget);
+    expect(find.text('from Sep 1'), findsNothing, reason: 'the month and the books start together');
     expect(find.text('₱2,850.00'), findsOneWidget, reason: 'sales');
     expect(find.text('₱1,670.00'), findsOneWidget, reason: 'gross profit');
     expect(find.text('Rent'), findsOneWidget);
     expect(find.text('₱470.00'), findsOneWidget, reason: 'net: 1,670 − 1,000 rent − 200 damaged');
     expect(find.textContaining('₱300.00 of these sales were stock from before the books started'), findsOneWidget);
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('Earlier')),
+      isSemantics(isEnabled: false, hasEnabledState: true),
+      reason: 'nothing before the books started',
+    );
 
-    await tester.scrollUntilVisible(find.text('7 days'), -200, scrollable: moneyPage());
-    await tester.tap(find.text('7 days'));
+    await tester.scrollUntilVisible(find.text('Since start'), -200, scrollable: moneyPage());
+    await tester.tap(find.text('Since start'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Net profit'), 200, scrollable: moneyPage());
-    expect(find.text('from Sep 20'), findsOneWidget);
-    expect(find.text('₱970.00'), findsOneWidget, reason: 'no rent this week');
+    expect(find.text('from Sep 1'), findsOneWidget);
+    expect(find.text('September 2026'), findsNothing);
   });
 
   testWidgets('the money log lists entries and stock bought, by month', (tester) async {
@@ -492,6 +563,19 @@ void main() {
     expect(find.text('Money put in'), findsOneWidget);
     expect(find.text('+₱10,000.00'), findsOneWidget);
     expect(find.text('Taken home'), findsOneWidget);
+    expect(find.text('₱10,000 in · ₱4,800 out · 4 entries'), findsOneWidget);
+
+    // A month is grouped by day.
+    await pickKind(tester, 'Month');
+    expect(find.text('Sun, Sep 20'), findsOneWidget);
+    expect(find.text('Tue, Sep 1'), findsOneWidget);
+
+    await pickKind(tester, 'Day');
+    expect(find.text('Nothing recorded today.'), findsOneWidget);
+    await stepEarlier(tester, times: 6);
+    expect(find.text('Sun, Sep 20'), findsOneWidget);
+    expect(find.text('Stock from Divisoria bale'), findsOneWidget);
+    expect(find.text('Money put in'), findsNothing);
   });
 
   testWidgets('Money fits on a small phone', (tester) async {

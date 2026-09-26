@@ -8,28 +8,27 @@ import 'package:shop_core/core/format/money_format.dart';
 
 import '../../../core/theme/shop_ui.dart';
 import '../../viewmodels/money_view_model.dart';
+import '../../widgets/ui/period_bar.dart';
 import '../../widgets/ui/section.dart';
 import 'money_log_screen.dart';
 
 /// How much of the owners' investment the shop has earned back, what it
-/// made in a period, and sales against costs month by month.
+/// made in a month or since the start, and sales against costs month by
+/// month.
 class MoneyScreen extends StatelessWidget {
   const MoneyScreen({super.key});
-
-  static const _rangeLabels = {
-    ReportRange.last7Days: '7 days',
-    ReportRange.last30Days: '30 days',
-    ReportRange.allTime: 'Since start',
-  };
 
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<MoneyViewModel>();
+    // Where profit counts from, when that isn't simply the period's start:
+    // since the books started, or a month the books started partway into.
+    final countsFrom = vm.periodStart == vm.period.start ? null : 'from ${DateFormat('MMM d').format(vm.periodStart)}';
 
     return CupertinoPageScaffold(
       child: CustomScrollView(
         slivers: [
-          const CupertinoSliverNavigationBar(largeTitle: Text('Money')),
+          const CupertinoSliverNavigationBar(largeTitle: Text('Money'), border: null),
           CupertinoSliverRefreshControl(onRefresh: context.read<MoneyViewModel>().load),
           if (!vm.loaded)
             const SliverFillRemaining(hasScrollBody: false, child: Center(child: CupertinoActivityIndicator()))
@@ -38,21 +37,22 @@ class MoneyScreen extends StatelessWidget {
               children: [
                 _PaybackCard(payback: vm.paybackStatus),
                 _WhereItIs(vm: vm),
-                SectionHeader('Profit', trailing: 'from ${DateFormat('MMM d').format(vm.periodStart)}'),
+                SectionHeader('Profit', trailing: countsFrom),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-                  child: CupertinoSlidingSegmentedControl<ReportRange>(
-                    groupValue: vm.range,
-                    onValueChanged: (r) {
-                      if (r != null) vm.selectRange(r);
-                    },
-                    children: {for (final r in MoneyViewModel.ranges) r: Text(_rangeLabels[r]!)},
+                  child: PeriodBar(
+                    period: vm.period,
+                    now: vm.now,
+                    kinds: MoneyViewModel.kinds,
+                    allLabel: 'Since start',
+                    earliest: vm.booksStartedAt,
+                    onChanged: vm.selectPeriod,
                   ),
                 ),
                 AnimatedSwitcher(
                   duration: Motion.medium,
                   switchInCurve: Motion.curve,
-                  child: _Profit(key: ValueKey(vm.range), statement: vm.statement),
+                  child: _Profit(key: ValueKey(vm.period), statement: vm.statement),
                 ),
                 if (vm.months.isNotEmpty) _MonthlyChart(months: vm.months),
                 GroupedSection(

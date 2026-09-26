@@ -38,6 +38,7 @@ class StockViewModel extends ChangeNotifier {
   String _query = '';
 
   bool get loaded => _loaded;
+  DateTime get now => _clock();
   StockFilter get filter => _filter;
   String get query => _query;
   int get lowStockThreshold => _threshold;

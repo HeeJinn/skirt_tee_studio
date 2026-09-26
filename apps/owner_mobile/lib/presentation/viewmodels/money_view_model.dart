@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:shop_core/calculations/money_calculations.dart';
-import 'package:shop_core/calculations/report_calculations.dart';
 import 'package:shop_core/domain/entities/item.dart';
 import 'package:shop_core/domain/entities/money_entry.dart';
 import 'package:shop_core/domain/entities/sale.dart';
@@ -9,6 +8,8 @@ import 'package:shop_core/domain/repositories/item_repository.dart';
 import 'package:shop_core/domain/repositories/money_repository.dart';
 import 'package:shop_core/domain/repositories/sale_repository.dart';
 import 'package:shop_core/domain/repositories/stock_repository.dart';
+
+import '../../core/period.dart';
 
 /// The Money tab: payback, profit for a period, and sales against costs by
 /// month. Every figure comes from shop_core's money calculations with the
@@ -29,8 +30,8 @@ class MoneyViewModel extends ChangeNotifier {
   final ItemRepository _items;
   final DateTime Function() _clock;
 
-  /// The periods the tab offers; allTime means since the books started.
-  static const ranges = [ReportRange.last7Days, ReportRange.last30Days, ReportRange.allTime];
+  /// The kinds of period the tab offers; all means since the books started.
+  static const kinds = [PeriodKind.month, PeriodKind.all];
 
   List<MoneyEntry> _entries = const [];
   List<Sale> _salesList = const [];
@@ -39,10 +40,13 @@ class MoneyViewModel extends ChangeNotifier {
   List<Item> _itemList = const [];
   DateTime? _booksStartedAt;
   bool _loaded = false;
-  ReportRange _range = ReportRange.last30Days;
+  Period? _period;
 
   bool get loaded => _loaded;
-  ReportRange get range => _range;
+  DateTime get now => _clock();
+
+  /// Opens on this month.
+  Period get period => _period ??= Period.month(_clock());
 
   /// Null until the shop computer's books have started and synced here.
   DateTime? get booksStartedAt => _booksStartedAt;
@@ -52,12 +56,17 @@ class MoneyViewModel extends ChangeNotifier {
   /// Where the chosen period's profit counts from: its start, but never
   /// before the books did.
   DateTime get periodStart {
-    final rangeStart = _range.startDate(_clock());
-    return rangeStart == null || rangeStart.isBefore(_booksStart) ? _booksStart : rangeStart;
+    final start = period.start;
+    return start == null || start.isBefore(_booksStart) ? _booksStart : start;
   }
 
-  ProfitStatement get statement =>
-      profitStatement(sales: _salesList, entries: _entries, movements: _movements, since: periodStart);
+  ProfitStatement get statement => profitStatement(
+        sales: _salesList,
+        entries: _entries,
+        movements: _movements,
+        since: periodStart,
+        before: period.end,
+      );
 
   /// Named apart from the shared payback() it calls.
   Payback get paybackStatus => payback(
@@ -84,9 +93,9 @@ class MoneyViewModel extends ChangeNotifier {
         for (final lot in _lots) MoneyLogEntry.fromLot(lot),
       ]..sort((a, b) => b.at.compareTo(a.at));
 
-  void selectRange(ReportRange range) {
-    if (range == _range) return;
-    _range = range;
+  void selectPeriod(Period period) {
+    if (period == this.period) return;
+    _period = period;
     notifyListeners();
   }
 
@@ -117,11 +126,15 @@ class MoneyLogEntry {
     required this.title,
     required this.amount,
     required this.isMoneyIn,
+    this.kind,
+    this.category,
     this.detail,
   });
 
   factory MoneyLogEntry.fromEntry(MoneyEntry e) => MoneyLogEntry(
         at: e.at,
+        kind: e.kind,
+        category: e.category,
         title: e.kind == MoneyEntryKind.expense ? (e.category?.label ?? 'Expense') : e.kind.label,
         amount: e.amount,
         isMoneyIn: e.kind == MoneyEntryKind.capitalIn,
@@ -150,5 +163,11 @@ class MoneyLogEntry {
 
   /// Money the owners put into the shop; everything else is money going out.
   final bool isMoneyIn;
+
+  /// What the owners recorded it as; null for stock bought.
+  final MoneyEntryKind? kind;
+
+  /// An expense's category.
+  final ExpenseCategory? category;
   final String? detail;
 }

@@ -1,37 +1,34 @@
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
-import 'package:shop_core/calculations/report_calculations.dart';
 import 'package:shop_core/calculations/sales_grouping.dart';
 import 'package:shop_core/core/format/money_format.dart';
 
+import '../../../core/period.dart';
 import '../../../core/theme/shop_ui.dart';
 import '../../viewmodels/sales_view_model.dart';
 import '../../widgets/sale_tile.dart';
 import '../../widgets/ui/empty_state.dart';
 import '../../widgets/ui/line_art.dart';
+import '../../widgets/ui/period_bar.dart';
 import '../../widgets/ui/section.dart';
 import 'sale_detail_screen.dart';
 
-/// Every sale in the chosen period, grouped by day with each day's total.
+/// Every sale on a chosen day or in a chosen month, grouped by day with
+/// each day's total.
 class SalesScreen extends StatelessWidget {
   const SalesScreen({super.key});
-
-  static const _rangeLabels = {
-    ReportRange.today: 'Today',
-    ReportRange.last7Days: '7 days',
-    ReportRange.last30Days: '30 days',
-  };
 
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<SalesViewModel>();
     final summary = vm.summary;
     final days = vm.days;
+    final period = vm.period;
 
     return CupertinoPageScaffold(
       child: CustomScrollView(
         slivers: [
-          const CupertinoSliverNavigationBar(largeTitle: Text('Sales')),
+          const CupertinoSliverNavigationBar(largeTitle: Text('Sales'), border: null),
           CupertinoSliverRefreshControl(onRefresh: context.read<SalesViewModel>().load),
           SliverToBoxAdapter(
             child: Padding(
@@ -39,14 +36,12 @@ class SalesScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  CupertinoSlidingSegmentedControl<ReportRange>(
-                    groupValue: vm.range,
-                    onValueChanged: (range) {
-                      if (range != null) vm.selectRange(range);
-                    },
-                    children: {
-                      for (final range in SalesViewModel.ranges) range: Text(_rangeLabels[range]!),
-                    },
+                  PeriodBar(
+                    period: period,
+                    now: vm.now,
+                    kinds: SalesViewModel.kinds,
+                    earliest: vm.earliest,
+                    onChanged: vm.selectPeriod,
                   ),
                   const SizedBox(height: Space.lg),
                   // The period's total, left-aligned and large; it changes
@@ -59,7 +54,7 @@ class SalesScreen extends StatelessWidget {
                       children: [...previous, ?current],
                     ),
                     child: Padding(
-                      key: ValueKey((vm.range, summary.revenue, summary.saleCount)),
+                      key: ValueKey((period, summary.revenue, summary.saleCount)),
                       padding: const EdgeInsets.symmetric(horizontal: Space.xs),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,7 +79,7 @@ class SalesScreen extends StatelessWidget {
           ),
           if (!vm.loaded)
             const SliverFillRemaining(hasScrollBody: false, child: Center(child: CupertinoActivityIndicator()))
-          else if (days.isEmpty && vm.range == ReportRange.today)
+          else if (days.isEmpty && period.kind == PeriodKind.day && period.isCurrent(vm.now))
             const SliverFillRemaining(
               hasScrollBody: false,
               child: EmptyState(
@@ -97,7 +92,7 @@ class SalesScreen extends StatelessWidget {
               hasScrollBody: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(Space.gutter + Space.xs, Space.xl, Space.gutter + Space.xs, 0),
-                child: Text('No sales in this period.', style: ShopType.subhead(context)),
+                child: Text('No sales ${period.phrase(vm.now)}.', style: ShopType.subhead(context)),
               ),
             )
           else
@@ -105,9 +100,12 @@ class SalesScreen extends StatelessWidget {
               itemCount: days.length,
               itemBuilder: (context, i) {
                 final day = days[i];
+                // A single day needs no heading: the date and its total are
+                // already just above.
+                final byDay = period.kind == PeriodKind.month;
                 return GroupedSection(
-                  title: dayLabel(day.day, vm.now),
-                  trailing: pesoWhole.format(day.total),
+                  title: byDay ? dayLabel(day.day, vm.now) : null,
+                  trailing: byDay ? pesoWhole.format(day.total) : null,
                   children: [
                     for (final sale in day.sales)
                       SaleTile(

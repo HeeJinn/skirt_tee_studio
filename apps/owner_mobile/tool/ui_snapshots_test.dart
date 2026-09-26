@@ -22,6 +22,7 @@ import 'package:owner_mobile/presentation/viewmodels/money_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/sales_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/stock_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/today_view_model.dart';
+import 'package:owner_mobile/presentation/widgets/ui/glass.dart';
 import 'package:path/path.dart' as p;
 import 'package:shop_core/data/datasources/local/item_image_storage.dart';
 import 'package:shop_core/domain/entities/cloud_sync.dart';
@@ -253,7 +254,7 @@ Future<void> _scroll(WidgetTester tester, double by) async {
 }
 
 Future<void> _back(WidgetTester tester) async {
-  await tester.tap(find.byType(CupertinoNavigationBarBackButton).last);
+  await tester.tap(find.byType(ShopBackButton).last);
   await tester.pumpAndSettle();
 }
 
@@ -296,8 +297,18 @@ void main() {
 
       await _tab(tester, 'Sales');
       await _snap(tester, 'sales_$suffix');
-      await tester.tap(find.text('7 days'));
-      await _snap(tester, 'sales_7days_$suffix');
+      await tester.tap(find.bySemanticsLabel('Earlier'));
+      await _snap(tester, 'sales_yesterday_$suffix');
+      await tester.tap(find.bySemanticsLabel('Pick a day'));
+      await _snap(tester, 'sales_day_picker_$suffix');
+      await tester.tap(find.widgetWithText(CupertinoButton, 'Done'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Month'));
+      await _snap(tester, 'sales_month_$suffix');
+      await tester.tap(find.bySemanticsLabel('Pick a month'));
+      await _snap(tester, 'sales_month_picker_$suffix');
+      await tester.tap(find.widgetWithText(CupertinoButton, 'Done'));
+      await tester.pumpAndSettle();
       await tester.tap(find.textContaining('Oversized Graphic Tee').first);
       await _snap(tester, 'sale_detail_$suffix');
       await _back(tester);
@@ -316,6 +327,11 @@ void main() {
       await _snap(tester, 'item_detail_$suffix');
       await _scroll(tester, 600);
       await _snap(tester, 'item_detail_scrolled_$suffix');
+      await tester.tap(find.text('All history'));
+      await _snap(tester, 'item_history_$suffix');
+      await tester.tap(find.text('Month'));
+      await _snap(tester, 'item_history_month_$suffix');
+      await _back(tester);
       await _back(tester);
 
       await _tab(tester, 'Money');
@@ -324,6 +340,11 @@ void main() {
       await _snap(tester, 'money_scrolled_$suffix');
       await _scroll(tester, 600);
       await _snap(tester, 'money_bottom_$suffix');
+      await tester.tap(find.text('Money log'));
+      await _snap(tester, 'money_log_$suffix');
+      await tester.tap(find.text('Month'));
+      await _snap(tester, 'money_log_month_$suffix');
+      await _back(tester);
 
       await _tab(tester, 'More');
       await _snap(tester, 'more_$suffix');

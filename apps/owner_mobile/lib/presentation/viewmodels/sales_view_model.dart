@@ -4,25 +4,34 @@ import 'package:shop_core/calculations/sales_grouping.dart';
 import 'package:shop_core/domain/entities/sale.dart';
 import 'package:shop_core/domain/repositories/sale_repository.dart';
 
-/// The Sales tab: every sale in the chosen period, grouped by day. Read-only.
+import '../../core/period.dart';
+
+/// The Sales tab: every sale on a chosen day or in a chosen month, grouped
+/// by day. Read-only.
 class SalesViewModel extends ChangeNotifier {
   SalesViewModel(this._repository, {DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
 
   final SaleRepository _repository;
   final DateTime Function() _clock;
 
-  /// The periods the tab offers.
-  static const ranges = [ReportRange.today, ReportRange.last7Days, ReportRange.last30Days];
+  /// The kinds of period the tab offers.
+  static const kinds = [PeriodKind.day, PeriodKind.month];
 
   List<Sale> _all = const [];
   bool _loaded = false;
-  ReportRange _range = ReportRange.today;
+  Period? _period;
 
   bool get loaded => _loaded;
-  ReportRange get range => _range;
   DateTime get now => _clock();
 
-  List<Sale> get sales => filterSalesByRange(_all, _range, _clock());
+  /// Opens on today.
+  Period get period => _period ??= Period.day(_clock());
+
+  /// When the oldest sale was rung up; null before the first.
+  DateTime? get earliest =>
+      _all.isEmpty ? null : _all.map((s) => s.dateTime).reduce((a, b) => a.isBefore(b) ? a : b);
+
+  List<Sale> get sales => _all.where((s) => period.contains(s.dateTime)).toList();
   List<SalesDay> get days => groupSalesByDay(sales);
   ReportSummary get summary => summarize(sales);
 
@@ -34,9 +43,9 @@ class SalesViewModel extends ChangeNotifier {
     return null;
   }
 
-  void selectRange(ReportRange range) {
-    if (range == _range) return;
-    _range = range;
+  void selectPeriod(Period period) {
+    if (period == this.period) return;
+    _period = period;
     notifyListeners();
   }
 

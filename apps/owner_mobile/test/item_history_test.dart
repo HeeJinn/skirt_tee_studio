@@ -61,6 +61,25 @@ void main() {
     expect(history.single.title, 'Received');
   });
 
+  test('sums up a stretch of history by what happened', () {
+    final history = itemHistory(
+      itemId: 'skirt',
+      lots: const [],
+      movements: [
+        movement(DateTime(2026, 9, 1), StockMovementType.received, 10),
+        movement(DateTime(2026, 9, 2), StockMovementType.received, 4),
+        movement(DateTime(2026, 9, 3), StockMovementType.writeOff, 1, reason: WriteOffReason.damaged),
+      ],
+      sales: [
+        sale(DateTime(2026, 9, 4), [('skirt', 2)]),
+        sale(DateTime(2026, 9, 5), [('skirt', 1), ('tee', 5)]),
+      ],
+    );
+    expect(historySummary(history), '3 sold · 14 received · 1 written off');
+    expect(historySummary(history.where((e) => e.kind == ItemChangeKind.sold)), '3 sold');
+    expect(historySummary(const []), isNull);
+  });
+
   test('counts pieces sold from a date on', () {
     final sales = [
       sale(DateTime(2026, 8, 31, 23), [('skirt', 5)]),

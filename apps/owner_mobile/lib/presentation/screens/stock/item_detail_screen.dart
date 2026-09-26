@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -8,50 +10,141 @@ import '../../../core/theme/shop_ui.dart';
 import '../../viewmodels/stock_view_model.dart';
 import '../../widgets/item_photo.dart';
 import '../../widgets/ui/badges.dart';
+import '../../widgets/ui/glass.dart';
 import '../../widgets/ui/section.dart';
 import 'item_history.dart';
+import 'item_history_screen.dart';
 
 /// One item: its photo, what it sells for and costs, how much is left and
 /// how fast it's selling, and every change to its stock. Looked up by id, so
 /// an item removed on the shop computer while open says so.
-class ItemDetailScreen extends StatelessWidget {
+///
+/// With a photo, the photo runs edge to edge up under the status bar, with
+/// only a glass back button floating on it, as iOS 26 lets content fill the
+/// screen; the item's name fades in on a bar once the photo scrolls away.
+class ItemDetailScreen extends StatefulWidget {
   const ItemDetailScreen({super.key, required this.itemId});
 
   final String itemId;
 
-  /// History rows shown before "and N more".
-  static const historyLimit = 15;
+  /// History rows shown here; the rest are a tap away.
+  static const historyPreview = 5;
+
+  @override
+  State<ItemDetailScreen> createState() => _ItemDetailScreenState();
+}
+
+class _ItemDetailScreenState extends State<ItemDetailScreen> {
+  final _scroll = ScrollController();
+  bool _pastPhoto = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// The square photo is as tall as the screen is wide; the bar shows once
+  /// the photo has gone up under where the bar would be.
+  void _onScroll() {
+    final media = MediaQuery.of(context);
+    final past = _scroll.offset > media.size.width - media.padding.top - 52;
+    if (past != _pastPhoto) setState(() => _pastPhoto = past);
+  }
 
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<StockViewModel>();
-    final item = vm.byId(itemId);
+    final item = vm.byId(widget.itemId);
+    final media = MediaQuery.of(context);
 
+    if (item == null) {
+      return CupertinoPageScaffold(
+        navigationBar: shopNavBar(title: 'Item', backTo: 'Stock'),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(Space.xl),
+            child: Text('This item was removed on the shop computer.', style: ShopType.subhead(context)),
+          ),
+        ),
+      );
+    }
+
+    final sections = [
+      _Title(item: item),
+      _Figures(item: item),
+      _Details(item: item),
+      _History(itemId: item.id, entries: vm.historyOf(item.id)),
+    ];
+
+    if (item.imagePath == null) {
+      return CupertinoPageScaffold(
+        navigationBar: shopNavBar(title: item.name, backTo: 'Stock'),
+        child: SafeArea(
+          bottom: false,
+          child: ListView(
+            padding: EdgeInsets.only(bottom: media.padding.bottom + Space.lg),
+            children: sections,
+          ),
+        ),
+      );
+    }
+
+    final colors = ShopColors.of(context);
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: Text(item?.name ?? 'Item', maxLines: 1, overflow: TextOverflow.ellipsis),
-        previousPageTitle: 'Stock',
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: item == null
-            ? Padding(
-                padding: const EdgeInsets.all(Space.xl),
-                child: Text('This item was removed on the shop computer.', style: ShopType.subhead(context)),
-              )
-            : ListView(
-                padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom + Space.lg),
-                children: [
-                  if (item.imagePath != null)
-                    // Full width, edge to edge: the photo is what identifies
-                    // the piece at a glance.
-                    AspectRatio(aspectRatio: 4 / 3, child: ItemPhoto(imagePath: item.imagePath, name: item.name)),
-                  _Title(item: item),
-                  _Figures(item: item),
-                  _Details(item: item),
-                  _History(entries: vm.historyOf(item.id)),
-                ],
+      child: Stack(
+        children: [
+          ListView(
+            controller: _scroll,
+            padding: EdgeInsets.only(bottom: media.padding.bottom + Space.lg),
+            children: [
+              AspectRatio(aspectRatio: 1, child: ItemPhoto(imagePath: item.imagePath, name: item.name)),
+              ...sections,
+            ],
+          ),
+          // The bar, once the photo has scrolled away: blurred page tone
+          // with the name, the way a large title collapses.
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                duration: Motion.medium,
+                curve: Motion.curve,
+                opacity: _pastPhoto ? 1 : 0,
+                child: ClipRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      height: media.padding.top + 52,
+                      padding: EdgeInsets.fromLTRB(64, media.padding.top, 64, 0),
+                      alignment: Alignment.center,
+                      color: colors.page.withValues(alpha: 0.8),
+                      child: Text(
+                        item.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: CupertinoTheme.of(context).textTheme.navTitleTextStyle,
+                      ),
+                    ),
+                  ),
+                ),
               ),
+            ),
+          ),
+          Positioned(
+            left: Space.md,
+            top: media.padding.top + 6,
+            child: const ShopBackButton(to: 'Stock'),
+          ),
+        ],
       ),
     );
   }
@@ -173,40 +266,36 @@ class _Details extends StatelessWidget {
   }
 }
 
+/// The latest few changes, and the way into the full history, which can
+/// be narrowed to a month or a day.
 class _History extends StatelessWidget {
-  const _History({required this.entries});
+  const _History({required this.itemId, required this.entries});
+  final String itemId;
   final List<ItemHistoryEntry> entries;
 
   @override
   Widget build(BuildContext context) {
-    final colors = ShopColors.of(context);
-    final shown = entries.take(ItemDetailScreen.historyLimit).toList();
-    final hidden = entries.length - shown.length;
-
-    (IconData, Color) badgeFor(ItemHistoryEntry e) => switch (e.title) {
-          'Sold' => (CupertinoIcons.bag, colors.ink.withValues(alpha: colors.isDark ? 0.35 : 0.55)),
-          'Found' => (CupertinoIcons.search, colors.accent),
-          _ when e.change > 0 => (CupertinoIcons.cube_box, colors.accent),
-          _ => (CupertinoIcons.minus, colors.danger),
-        };
+    final shown = entries.take(ItemDetailScreen.historyPreview).toList();
 
     return GroupedSection(
       title: 'History',
-      footer: hidden > 0 ? 'Showing the latest ${shown.length} of ${entries.length} changes.' : null,
       children: shown.isEmpty
           ? [const ValueRow(label: 'No changes recorded', tone: ValueTone.muted)]
           : [
               for (final e in shown)
-                ValueRow(
-                  leading: IconBadge(icon: badgeFor(e).$1, color: badgeFor(e).$2),
-                  label: e.title,
-                  labelLines: 1,
-                  detail: e.detail == null
-                      ? DateFormat('MMM d, y · h:mm a').format(e.at)
-                      : '${DateFormat('MMM d, y').format(e.at)} · ${e.detail}',
-                  value: e.change > 0 ? '+${e.change}' : '−${-e.change}',
-                  tone: e.change > 0 ? ValueTone.positive : ValueTone.strong,
+                ItemHistoryRow(
+                  entry: e,
+                  when: DateFormat(e.detail == null ? 'MMM d, y · h:mm a' : 'MMM d, y').format(e.at),
                 ),
+              ValueRow(
+                leading: const Icon(CupertinoIcons.calendar, size: 20),
+                label: 'All history',
+                value: '${entries.length}',
+                tone: ValueTone.muted,
+                onTap: () => Navigator.of(context).push(
+                  CupertinoPageRoute<void>(builder: (_) => ItemHistoryScreen(itemId: itemId)),
+                ),
+              ),
             ],
     );
   }

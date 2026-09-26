@@ -7,6 +7,7 @@ import 'package:shop_core/domain/entities/sale.dart';
 import '../../../core/theme/shop_ui.dart';
 import '../../viewmodels/sales_view_model.dart';
 import '../../widgets/ui/badges.dart';
+import '../../widgets/ui/glass.dart';
 import '../../widgets/ui/section.dart';
 
 /// One sale: what was bought, how it was paid, and what the shop made on it.
@@ -25,7 +26,7 @@ class SaleDetailScreen extends StatelessWidget {
     final sale = context.watch<SalesViewModel>().byId(saleId);
 
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(middle: const Text('Sale'), previousPageTitle: backLabel),
+      navigationBar: shopNavBar(title: 'Sale', backTo: backLabel),
       child: SafeArea(
         child: sale == null
             ? Padding(
@@ -83,7 +84,13 @@ class _Receipt extends StatelessWidget {
                 // Sales from before the shop recorded payment methods.
                 text: sale.paymentMethod?.label ?? 'Payment not recorded',
                 color: colors.ink,
-                icon: CupertinoIcons.creditcard,
+                // As the sales list marks it; cash carries no icon.
+                icon: switch (sale.paymentMethod) {
+                  PaymentMethod.gcash || PaymentMethod.maya || PaymentMethod.cashless =>
+                    CupertinoIcons.device_phone_portrait,
+                  PaymentMethod.card => CupertinoIcons.creditcard,
+                  PaymentMethod.cash || null => null,
+                },
               ),
               Pill(
                 text: '${sale.totalItemsSold} ${sale.totalItemsSold == 1 ? 'piece' : 'pieces'}',
