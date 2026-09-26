@@ -10,6 +10,7 @@ import 'package:owner_mobile/presentation/viewmodels/sales_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/stock_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/today_view_model.dart';
 import 'package:owner_mobile/presentation/widgets/ui/section.dart';
+import 'package:owner_mobile/presentation/widgets/ui/shop_tab_bar.dart';
 import 'package:shop_core/domain/entities/cloud_sync.dart';
 import 'package:shop_core/domain/entities/item.dart';
 import 'package:shop_core/domain/entities/money_entry.dart';
@@ -162,7 +163,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     for (final tab in ['Today', 'Sales', 'Stock', 'Money', 'More']) {
-      expect(find.text(tab), findsWidgets, reason: tab);
+      expect(find.byKey(ValueKey('tab-$tab')), findsOneWidget, reason: tab);
     }
   });
 
@@ -170,7 +171,7 @@ void main() {
     await _pumpApp(tester, initial: _connected);
 
     for (final tab in ['Sales', 'Stock', 'Money', 'More', 'Today']) {
-      await tester.tap(find.descendant(of: find.byType(CupertinoTabBar), matching: find.text(tab)));
+      await tester.tap(find.byKey(ValueKey('tab-$tab')));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull, reason: tab);
     }
@@ -178,7 +179,7 @@ void main() {
 
   testWidgets('More shows the account, and signing out asks first', (tester) async {
     await _pumpApp(tester, initial: _connected);
-    await tester.tap(find.descendant(of: find.byType(CupertinoTabBar), matching: find.text('More')));
+    await tester.tap(find.byKey(const ValueKey('tab-More')));
     await tester.pumpAndSettle();
     expect(find.text('owner@example.com'), findsOneWidget);
 
@@ -228,7 +229,7 @@ void main() {
   }
 
   Future<void> openSales(WidgetTester tester) async {
-    await tester.tap(find.descendant(of: find.byType(CupertinoTabBar), matching: find.text('Sales')));
+    await tester.tap(find.byKey(const ValueKey('tab-Sales')));
     await tester.pumpAndSettle();
   }
 
@@ -341,7 +342,7 @@ void main() {
   });
 
   Future<void> openStock(WidgetTester tester) async {
-    await tester.tap(find.descendant(of: find.byType(CupertinoTabBar), matching: find.text('Stock')));
+    await tester.tap(find.byKey(const ValueKey('tab-Stock')));
     await tester.pumpAndSettle();
   }
 
@@ -435,7 +436,7 @@ void main() {
   });
 
   Future<void> openMoney(WidgetTester tester) async {
-    await tester.tap(find.descendant(of: find.byType(CupertinoTabBar), matching: find.text('Money')));
+    await tester.tap(find.byKey(const ValueKey('tab-Money')));
     await tester.pumpAndSettle();
   }
 
@@ -499,6 +500,42 @@ void main() {
     await tester.drag(moneyPage(), const Offset(0, -3000));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('only the selected tab shows its label, and it moves with the selection', (tester) async {
+    await _pumpApp(tester, initial: _connected);
+    Finder label(String tab) => find.descendant(of: find.byType(ShopTabBar), matching: find.text(tab));
+
+    expect(label('Today'), findsOneWidget);
+    expect(label('Stock'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('tab-Stock')));
+    await tester.pumpAndSettle();
+    expect(label('Stock'), findsOneWidget);
+    expect(label('Today'), findsNothing);
+  });
+
+  testWidgets('tapping the current tab again returns to its first screen', (tester) async {
+    await _pumpApp(tester, initial: _connected);
+    await tester.tap(find.byKey(const ValueKey('tab-Stock')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Basic tee'));
+    await tester.pumpAndSettle();
+    expect(find.text('Details'), findsOneWidget, reason: 'on the item page');
+
+    await tester.tap(find.byKey(const ValueKey('tab-Stock')));
+    await tester.pumpAndSettle();
+    expect(find.text('Details'), findsNothing);
+    expect(find.text('3 items · 15 pieces on hand'), findsOneWidget, reason: 'back on the Stock grid');
+  });
+
+  testWidgets('the tab bar fits a small phone on every tab', (tester) async {
+    await _pumpApp(tester, initial: _connected, size: const Size(320, 568));
+    for (final tab in ['Sales', 'Stock', 'Money', 'More', 'Today']) {
+      await tester.tap(find.byKey(ValueKey('tab-$tab')));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: tab);
+    }
   });
 
   test('the sync line reads naturally', () {

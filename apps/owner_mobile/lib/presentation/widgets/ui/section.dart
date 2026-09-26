@@ -28,6 +28,16 @@ class SectionHeader extends StatelessWidget {
       );
 }
 
+/// The space at the end of a scrolling screen: the bottom safe area (which
+/// includes the floating tab bar) plus a little air, so the last row scrolls
+/// clear of the bar.
+class BottomInset extends StatelessWidget {
+  const BottomInset({super.key});
+
+  @override
+  Widget build(BuildContext context) => SizedBox(height: MediaQuery.paddingOf(context).bottom + Space.lg);
+}
+
 /// A small grey note under a section, as in iOS Settings.
 class SectionFooter extends StatelessWidget {
   const SectionFooter(this.text, {super.key});

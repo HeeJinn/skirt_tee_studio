@@ -86,7 +86,7 @@ class StockScreen extends StatelessWidget {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.xxl),
+              padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, 0),
               sliver: SliverGrid.builder(
                 gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: 220,
@@ -98,6 +98,7 @@ class StockScreen extends StatelessWidget {
                 itemBuilder: (context, i) => _ItemCard(item: items[i]),
               ),
             ),
+          const SliverToBoxAdapter(child: BottomInset()),
         ],
       ),
     );

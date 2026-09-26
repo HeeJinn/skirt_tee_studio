@@ -40,7 +40,7 @@ class ItemDetailScreen extends StatelessWidget {
                 child: Text('This item was removed on the shop computer.', style: ShopType.subhead(context)),
               )
             : ListView(
-                padding: const EdgeInsets.only(bottom: Space.xxl + Space.xxl),
+                padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom + Space.lg),
                 children: [
                   if (item.imagePath != null)
                     // Full width, edge to edge: the photo is what identifies

@@ -45,7 +45,7 @@ class TodayScreen extends StatelessWidget {
                   const SectionFooter(
                     "Some of today's pieces have no recorded cost, so they count as ₱0 cost and profit reads high.",
                   ),
-                const SizedBox(height: Space.xxl),
+                const BottomInset(),
               ],
             ),
         ],

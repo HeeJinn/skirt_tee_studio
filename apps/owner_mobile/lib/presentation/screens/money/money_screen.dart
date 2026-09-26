@@ -68,7 +68,7 @@ class MoneyScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: Space.xxl),
+                const BottomInset(),
               ],
             ),
         ],

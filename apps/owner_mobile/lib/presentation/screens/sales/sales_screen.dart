@@ -116,7 +116,7 @@ class SalesScreen extends StatelessWidget {
                 );
               },
             ),
-          const SliverToBoxAdapter(child: SizedBox(height: Space.xxl)),
+          const SliverToBoxAdapter(child: BottomInset()),
         ],
       ),
     );

@@ -227,7 +227,7 @@ Future<void> _snap(WidgetTester tester, String name) async {
 Finder _page() => find.descendant(of: find.byType(Scrollable), matching: find.byType(Viewport)).first;
 
 Future<void> _tab(WidgetTester tester, String label) async {
-  await tester.tap(find.descendant(of: find.byType(CupertinoTabBar), matching: find.text(label)));
+  await tester.tap(find.byKey(ValueKey('tab-$label')));
   await tester.pumpAndSettle();
 }
 
