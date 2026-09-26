@@ -1,15 +1,16 @@
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 
 import '../../domain/costing.dart';
 import '../../domain/entities/item.dart';
 import '../../domain/entities/stock.dart';
 import '../../domain/repositories/stock_repository.dart';
+import '../datasources/local/sql_helpers.dart';
 import '../models/item_model.dart';
 import '../models/money_models.dart';
 
 class StockRepositoryImpl implements StockRepository {
   StockRepositoryImpl(this._db);
-  final Database _db;
+  final SqliteConnection _db;
 
   @override
   Future<void> receiveLot(StockLot lot, List<LotLine> lines, {List<Item> newItems = const []}) async {
@@ -18,7 +19,7 @@ class StockRepositoryImpl implements StockRepository {
     }
     final unitCosts = allocateLotCost(lot.totalCost, lines);
 
-    await _db.transaction((txn) async {
+    await _db.writeTransaction((txn) async {
       for (final item in newItems) {
         await txn.insert('items', ItemModel.fromEntity(item.copyWith(qtyOnHand: 0)).toMap());
       }
@@ -32,7 +33,7 @@ class StockRepositoryImpl implements StockRepository {
           addedQty: line.qty,
           addedCost: unitCosts[i],
         );
-        await txn.rawUpdate(
+        await txn.execute(
           'UPDATE items SET qtyOnHand = qtyOnHand + ?, unitCost = ? WHERE id = ?',
           [line.qty, unitCost, line.itemId],
         );
@@ -55,12 +56,12 @@ class StockRepositoryImpl implements StockRepository {
   @override
   Future<void> writeOff(String itemId, int qty, WriteOffReason reason, {String note = '', DateTime? at}) async {
     if (qty <= 0) throw StockChangeException('Enter how many pieces to remove.');
-    await _db.transaction((txn) async {
+    await _db.writeTransaction((txn) async {
       final item = await _currentStock(txn, itemId);
       if (qty > item.qty) {
         throw StockChangeException('Only ${item.qty} of "${item.name}" in stock — can\'t remove $qty.');
       }
-      await txn.rawUpdate('UPDATE items SET qtyOnHand = qtyOnHand - ? WHERE id = ?', [qty, itemId]);
+      await txn.execute('UPDATE items SET qtyOnHand = qtyOnHand - ? WHERE id = ?', [qty, itemId]);
       await txn.insert('stock_movements', stockMovementToMap(item.movement(StockMovementType.writeOff, qty, at, note, reason)));
     });
   }
@@ -68,16 +69,16 @@ class StockRepositoryImpl implements StockRepository {
   @override
   Future<void> markFound(String itemId, int qty, {String note = '', DateTime? at}) async {
     if (qty <= 0) throw StockChangeException('Enter how many pieces were found.');
-    await _db.transaction((txn) async {
+    await _db.writeTransaction((txn) async {
       final item = await _currentStock(txn, itemId);
-      await txn.rawUpdate('UPDATE items SET qtyOnHand = qtyOnHand + ? WHERE id = ?', [qty, itemId]);
+      await txn.execute('UPDATE items SET qtyOnHand = qtyOnHand + ? WHERE id = ?', [qty, itemId]);
       await txn.insert('stock_movements', stockMovementToMap(item.movement(StockMovementType.found, qty, at, note)));
     });
   }
 
   @override
   Future<void> removeItem(String itemId) async {
-    await _db.transaction((txn) async {
+    await _db.writeTransaction((txn) async {
       final rows = await txn.query('items', columns: ['id'], where: 'id = ?', whereArgs: [itemId]);
       if (rows.isEmpty) return;
       final item = await _currentStock(txn, itemId);
@@ -99,11 +100,11 @@ class StockRepositoryImpl implements StockRepository {
 
   @override
   Future<List<StockMovement>> getMovements() async {
-    final rows = await _db.query('stock_movements', orderBy: 'at DESC, id DESC');
+    final rows = await _db.query('stock_movements', orderBy: 'at DESC');
     return rows.map(stockMovementFromMap).toList();
   }
 
-  Future<_Stock> _currentStock(DatabaseExecutor txn, String itemId, [String? nameForError]) async {
+  Future<_Stock> _currentStock(SqliteReadContext txn, String itemId, [String? nameForError]) async {
     final rows = await txn.query(
       'items',
       columns: ['name', 'qtyOnHand', 'unitCost'],

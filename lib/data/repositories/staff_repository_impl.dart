@@ -2,15 +2,16 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/entities/staff.dart';
 import '../../domain/repositories/staff_repository.dart';
+import '../datasources/local/sql_helpers.dart';
 
 class StaffRepositoryImpl implements StaffRepository {
   StaffRepositoryImpl(this._db);
-  final Database _db;
+  final SqliteConnection _db;
 
   // ponytail: iterated salted SHA-256; a 4–6 digit PIN is brute-forceable
   // from a stolen DB regardless — move to PBKDF2/argon2 + real passwords if
@@ -70,7 +71,7 @@ class StaffRepositoryImpl implements StaffRepository {
 
   @override
   Future<List<AuditEntry>> recentActivity({int limit = 200}) async {
-    final rows = await _db.query('audit_log', orderBy: 'id DESC', limit: limit);
+    final rows = await _db.query('audit_log', orderBy: 'at DESC', limit: limit);
     return [
       for (final r in rows)
         AuditEntry(

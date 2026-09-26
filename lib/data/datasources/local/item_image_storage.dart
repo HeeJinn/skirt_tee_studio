@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -9,11 +10,30 @@ import 'package:uuid/uuid.dart';
 /// ever stores a path this app controls — never a path on the user's
 /// filesystem, which they could later move, rename, or delete out from
 /// under it.
+///
+/// The database stores just the file name (the image key) since the folder
+/// differs per PC; [pathFor] turns it back into this PC's path.
 class ItemImageStorage {
   ItemImageStorage._();
   static final ItemImageStorage instance = ItemImageStorage._();
 
   static const _uuid = Uuid();
+
+  String? _directory;
+
+  /// Resolves the images folder once, before any item is read.
+  Future<void> init() async => _directory = (await _imageDir()).path;
+
+  @visibleForTesting
+  void useDirectory(String path) => _directory = path;
+
+  String pathFor(String key) {
+    final dir = _directory;
+    if (dir == null) throw StateError('ItemImageStorage.init() must run before items are read.');
+    return p.join(dir, key);
+  }
+
+  static String keyFor(String path) => p.basename(path);
 
   Future<Directory> _imageDir() async {
     final supportDir = await getApplicationSupportDirectory();

@@ -1,6 +1,7 @@
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 
 import '../../models/reservation_model.dart';
+import 'sql_helpers.dart';
 
 abstract class ReservationLocalDataSource {
   Future<List<ReservationModel>> getAll();
@@ -11,7 +12,7 @@ abstract class ReservationLocalDataSource {
 
 class ReservationLocalDataSourceImpl implements ReservationLocalDataSource {
   ReservationLocalDataSourceImpl(this._db);
-  final Database _db;
+  final SqliteConnection _db;
 
   @override
   Future<List<ReservationModel>> getAll() async {

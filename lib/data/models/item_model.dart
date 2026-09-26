@@ -1,4 +1,5 @@
 import '../../domain/entities/item.dart';
+import '../datasources/local/item_image_storage.dart';
 
 class ItemModel extends Item {
   const ItemModel({
@@ -30,7 +31,10 @@ class ItemModel extends Item {
         unitPrice: (map['unitPrice'] as num).toDouble(),
         qtyOnHand: map['qtyOnHand'] as int,
         isBargain: (map['isBargain'] as int) == 1,
-        imagePath: map['imagePath'] as String?,
+        imagePath: switch (map['imageKey'] as String?) {
+          final key? => ItemImageStorage.instance.pathFor(key),
+          null => null,
+        },
         unitCost: (map['unitCost'] as num?)?.toDouble(),
       );
 
@@ -41,7 +45,10 @@ class ItemModel extends Item {
         'unitPrice': unitPrice,
         'qtyOnHand': qtyOnHand,
         'isBargain': isBargain ? 1 : 0,
-        'imagePath': imagePath,
+        'imageKey': switch (imagePath) {
+          final path? => ItemImageStorage.keyFor(path),
+          null => null,
+        },
         'unitCost': unitCost,
       };
 }

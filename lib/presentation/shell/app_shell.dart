@@ -6,6 +6,7 @@ import '../../core/routing/app_routes.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/date_stamp.dart';
 import '../../data/datasources/local/database_service.dart';
+import '../../domain/entities/cloud_sync.dart';
 import '../../domain/entities/staff.dart';
 import '../screens/customers/customers_screen.dart';
 import '../screens/inventory/inventory_screen.dart';
@@ -17,8 +18,10 @@ import '../screens/sales/sales_history_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/staff/staff_screen.dart';
 import '../viewmodels/cart_view_model.dart';
+import '../viewmodels/cloud_sync_view_model.dart';
 import '../viewmodels/session_view_model.dart';
 import '../widgets/app_snackbar.dart';
+import '../widgets/cloud_status.dart';
 import '../widgets/monogram.dart';
 
 /// Desktop shell: persistent grouped sidebar + main content area.
@@ -77,6 +80,7 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final session = context.watch<SessionViewModel>();
+    final cloud = context.watch<CloudSyncViewModel>().state;
     final destinations = kAppDestinations.where((d) => session.isOwner || !d.ownerOnly).toList();
     final selected = _selectedIndex.clamp(0, destinations.length - 1);
 
@@ -95,6 +99,7 @@ class _AppShellState extends State<AppShell> {
             onOpenSettings: () => setState(() => _settingsOpen = true),
             user: session.current!,
             onBackup: session.isOwner ? _backupData : null,
+            cloudState: session.isOwner && cloud.isConnected ? cloud : null,
             onLock: _lock,
           ),
           Expanded(
@@ -124,6 +129,7 @@ class _Sidebar extends StatelessWidget {
     required this.onOpenSettings,
     required this.user,
     required this.onBackup,
+    required this.cloudState,
     required this.onLock,
   });
 
@@ -135,6 +141,9 @@ class _Sidebar extends StatelessWidget {
   final VoidCallback onOpenSettings;
   final StaffMember user;
   final VoidCallback? onBackup;
+
+  /// Owners only, once this PC is connected to the cloud.
+  final CloudSyncState? cloudState;
   final VoidCallback onLock;
 
   @override
@@ -199,6 +208,7 @@ class _Sidebar extends StatelessWidget {
           ),
           ...items,
           const Spacer(),
+          if (cloudState != null) _CloudStatusItem(state: cloudState!, onTap: onOpenSettings),
           _NavItem(
             icon: settingsOpen ? Icons.tune : Icons.tune_outlined,
             label: 'Settings',
@@ -287,6 +297,53 @@ class _NavItem extends StatelessWidget {
                         fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                         color: color,
                       ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One quiet line above Settings saying whether this PC is backed up; the
+/// detail is in its tooltip, and a click opens Settings.
+class _CloudStatusItem extends StatelessWidget {
+  const _CloudStatusItem({required this.state, required this.onTap});
+
+  final CloudSyncState state;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final look = CloudStatusLook.of(context, state);
+    return Tooltip(
+      message: look.detail,
+      waitDuration: const Duration(milliseconds: 400),
+      child: Semantics(
+        button: true,
+        label: 'Cloud backup: ${look.label}. ${look.detail}',
+        excludeSemantics: true,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 2),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AppRadius.control),
+            hoverColor: context.colors.onSurface.withValues(alpha: 0.05),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(look.icon, size: 18, color: look.color),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: Text(
+                      look.label,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.bodySmall?.copyWith(color: look.color, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],

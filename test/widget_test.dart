@@ -9,10 +9,12 @@ import 'package:provider/provider.dart';
 
 import 'package:skirt_tee_studio/core/theme/app_theme.dart';
 import 'package:skirt_tee_studio/domain/entities/appearance.dart';
+import 'package:skirt_tee_studio/domain/entities/cloud_sync.dart';
 import 'package:skirt_tee_studio/domain/entities/item.dart';
 import 'package:skirt_tee_studio/domain/entities/staff.dart';
 import 'package:skirt_tee_studio/presentation/shell/app_shell.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/cart_view_model.dart';
+import 'package:skirt_tee_studio/presentation/viewmodels/cloud_sync_view_model.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/inventory_view_model.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/money_view_model.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/reservation_view_model.dart';
@@ -20,6 +22,7 @@ import 'package:skirt_tee_studio/presentation/viewmodels/sales_view_model.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/session_view_model.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/settings_view_model.dart';
 
+import 'fakes/fake_cloud_sync_repository.dart';
 import 'fakes/fake_item_repository.dart';
 import 'fakes/fake_money_repository.dart';
 import 'fakes/fake_reservation_repository.dart';
@@ -28,7 +31,7 @@ import 'fakes/fake_settings_repository.dart';
 import 'fakes/fake_staff_repository.dart';
 import 'fakes/fake_stock_repository.dart';
 
-Widget _buildApp(SessionViewModel session) {
+Widget _buildApp(SessionViewModel session, FakeCloudSyncRepository cloud) {
   final inventoryViewModel = InventoryViewModel(FakeItemRepository(), FakeStockRepository())
     ..addItem(const Item(
       id: 'item-1',
@@ -49,6 +52,7 @@ Widget _buildApp(SessionViewModel session) {
       ChangeNotifierProvider(create: (_) => SettingsViewModel(FakeSettingsRepository())),
       ChangeNotifierProvider.value(value: session),
       ChangeNotifierProvider(create: (_) => MoneyViewModel(FakeMoneyRepository(), FakeStockRepository())),
+      ChangeNotifierProvider(create: (_) => CloudSyncViewModel(cloud, onRemoteChanges: () async {})..load()),
     ],
     child: MaterialApp(theme: AppTheme.light, home: const AppShell()),
   );
@@ -57,11 +61,11 @@ Widget _buildApp(SessionViewModel session) {
 /// Pumps the shell at a real desktop size — the Windows runner enforces a
 /// minimum window of ~1100x640, so the 800x600 test default isn't a size
 /// the app can actually be shown at.
-Future<void> _pumpApp(WidgetTester tester, {StaffRole role = StaffRole.owner}) async {
+Future<void> _pumpApp(WidgetTester tester, {StaffRole role = StaffRole.owner, FakeCloudSyncRepository? cloud}) async {
   tester.view.physicalSize = const Size(1280, 800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(_buildApp(await signedInSession(role: role)));
+  await tester.pumpWidget(_buildApp(await signedInSession(role: role), cloud ?? FakeCloudSyncRepository()));
 }
 
 void main() {
@@ -102,6 +106,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
+    expect(find.text('CLOUD BACKUP'), findsNothing, reason: 'cloud backup is for owners');
     for (final preset in ThemePresets.all) {
       expect(find.text(preset.name), findsOneWidget, reason: preset.name);
     }
@@ -117,6 +122,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Blush Atelier'), findsNothing);
     expect(find.text('Basic Tee'), findsOneWidget);
+  });
+
+  testWidgets('an owner connects this computer to the cloud from Settings', (tester) async {
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+    expect(find.text('Backed up'), findsNothing, reason: 'no sidebar status until connected');
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('CLOUD BACKUP'), findsOneWidget);
+    expect(find.text('Not connected'), findsOneWidget);
+
+    await tester.tap(find.text('CONNECT TO CLOUD'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'owner@example.com');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Password'), 'wrong');
+    await tester.tap(find.text('CONNECT'));
+    await tester.pumpAndSettle();
+    expect(find.text("That email and password don't match."), findsOneWidget, reason: 'stays open to retry');
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Password'), FakeCloudSyncRepository.goodPassword);
+    await tester.tap(find.text('CONNECT'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Backed up'), findsNWidgets(2), reason: 'Settings panel and sidebar');
+    expect(find.text('Signed in as owner@example.com'), findsOneWidget);
+  });
+
+  testWidgets('a connected owner sees when changes are waiting offline', (tester) async {
+    final cloud = FakeCloudSyncRepository(
+      initial: const CloudSyncState(status: CloudStatus.offline, email: 'owner@example.com', pendingChanges: 3),
+    );
+    await _pumpApp(tester, cloud: cloud);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Offline'), findsOneWidget);
+    expect(find.byTooltip('3 changes will upload when the internet is back'), findsOneWidget);
   });
 
   test('every preset builds a light and dark theme from its own palette', () {
