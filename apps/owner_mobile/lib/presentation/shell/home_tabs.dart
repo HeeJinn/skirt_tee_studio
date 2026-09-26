@@ -54,7 +54,6 @@ class _HomeTabsState extends State<HomeTabs> {
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
-    final page = ShopColors.of(context).page;
     // Screens keep the floating bar's height clear at the bottom, so their
     // last row scrolls up above it.
     final withBar = media.copyWith(
@@ -79,29 +78,10 @@ class _HomeTabsState extends State<HomeTabs> {
             ],
           ),
         ),
-        // Content fades into the page behind the bar, so rows scrolling
-        // underneath don't collide with it.
+        // Content scrolls under the glass bar and blurs through it.
         Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: media.padding.bottom + ShopTabBar.bottomGap + ShopTabBar.height + Space.xl,
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [page.withValues(alpha: 0), page.withValues(alpha: 0.9), page],
-                  stops: const [0, 0.45, 1],
-                ),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: Space.gutter,
-          right: Space.gutter,
+          left: Space.gutter + Space.xs,
+          right: Space.gutter + Space.xs,
           bottom: media.padding.bottom + ShopTabBar.bottomGap,
           child: ShopTabBar(tabs: HomeTabs.tabs, currentIndex: _index, onTap: _select),
         ),

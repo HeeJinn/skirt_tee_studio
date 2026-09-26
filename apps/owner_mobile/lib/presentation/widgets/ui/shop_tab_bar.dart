@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
@@ -16,9 +18,10 @@ class ShopTab {
   final IconData activeIcon;
 }
 
-/// A floating capsule of tabs: unselected tabs are outline icons; the
-/// selected one opens into a light pill with a filled icon and its label.
-/// The pill widens and the icon fills in as the selection moves.
+/// A floating glass tab bar in the style of iOS 26: a frosted capsule over
+/// the content (light glass in light mode, dark glass in dark mode), every
+/// tab an icon with its label beneath, and a soft glass platter that springs
+/// across to the selected tab.
 class ShopTabBar extends StatelessWidget {
   const ShopTabBar({super.key, required this.tabs, required this.currentIndex, required this.onTap});
 
@@ -27,42 +30,79 @@ class ShopTabBar extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   /// The capsule's height; screens keep this much clear at the bottom.
-  static const height = 60.0;
+  static const height = 64.0;
 
   /// Gap between the capsule and the bottom safe area.
-  static const bottomGap = Space.sm;
+  static const bottomGap = Space.xs;
+
+  /// A gentle overshoot, like the system bar's selection.
+  static const _spring = Cubic(0.34, 1.3, 0.5, 1);
 
   @override
   Widget build(BuildContext context) {
     final colors = ShopColors.of(context);
-    // Light mode: the shop's ink as the capsule. Dark mode: one step above
-    // the cards, with a hairline edge so it separates from the page.
-    final barColor = colors.isDark ? colors.hero : colors.ink;
+    final dark = colors.isDark;
 
-    return Container(
-      height: height,
-      padding: const EdgeInsets.all(6),
+    // The glass: the page's own tone, mostly see-through, over a blur of
+    // whatever scrolls underneath.
+    final tint = dark ? const Color(0xFF232A28).withValues(alpha: 0.72) : const Color(0xFFFFFFFF).withValues(alpha: 0.72);
+    final edge = dark ? const Color(0xFFFFFFFF).withValues(alpha: 0.10) : const Color(0xFFFFFFFF).withValues(alpha: 0.9);
+    final platter = dark ? const Color(0xFFFFFFFF).withValues(alpha: 0.12) : colors.ink.withValues(alpha: 0.07);
+
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: barColor,
         borderRadius: BorderRadius.circular(Radii.pill),
-        border: colors.isDark ? Border.all(color: colors.hairline) : null,
-        // It genuinely floats over the content, so it earns a shadow.
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF000000).withValues(alpha: colors.isDark ? 0.3 : 0.1),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF000000).withValues(alpha: dark ? 0.3 : 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          for (var i = 0; i < tabs.length; i++)
-            i == currentIndex
-                ? Flexible(child: _TabItem(tab: tabs[i], selected: true, onTap: () => onTap(i)))
-                : _TabItem(tab: tabs[i], selected: false, onTap: () => onTap(i)),
-        ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(Radii.pill),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Container(
+            height: height,
+            padding: const EdgeInsets.all(Space.xs),
+            decoration: BoxDecoration(
+              color: tint,
+              borderRadius: BorderRadius.circular(Radii.pill),
+              // The bright rim that makes it read as glass.
+              border: Border.all(color: edge, width: 0.8),
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final slot = constraints.maxWidth / tabs.length;
+                return Stack(
+                  children: [
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 420),
+                      curve: _spring,
+                      left: slot * currentIndex,
+                      top: 0,
+                      bottom: 0,
+                      width: slot,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(color: platter, borderRadius: BorderRadius.circular(Radii.pill)),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        for (var i = 0; i < tabs.length; i++)
+                          Expanded(
+                            child: _TabItem(tab: tabs[i], selected: i == currentIndex, onTap: () => onTap(i)),
+                          ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -78,11 +118,7 @@ class _TabItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = ShopColors.of(context);
-    // The pill is the light tone of whichever mode: the card in light mode,
-    // the ink (near-white) in dark mode.
-    final pill = colors.isDark ? colors.ink : colors.card;
-    final onPill = colors.isDark ? colors.page : colors.ink;
-    final idle = (colors.isDark ? colors.ink : colors.card).withValues(alpha: 0.6);
+    final color = selected ? colors.ink : colors.secondaryInk;
 
     return Semantics(
       button: true,
@@ -96,56 +132,29 @@ class _TabItem extends StatelessWidget {
           if (!selected) HapticFeedback.selectionClick();
           onTap();
         },
-        child: AnimatedContainer(
-          duration: Motion.medium,
-          curve: Motion.curve,
-          height: double.infinity,
-          constraints: const BoxConstraints(minWidth: 48),
-          padding: EdgeInsets.symmetric(horizontal: selected ? Space.lg : Space.md),
-          decoration: BoxDecoration(
-            color: selected ? pill : pill.withValues(alpha: 0),
-            borderRadius: BorderRadius.circular(Radii.pill),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedSwitcher(
-                duration: Motion.fast,
-                transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
-                child: Icon(
-                  selected ? tab.activeIcon : tab.icon,
-                  key: ValueKey(selected),
-                  size: 22,
-                  color: selected ? onPill : idle,
-                ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedSwitcher(
+              duration: Motion.fast,
+              transitionBuilder: (child, animation) => ScaleTransition(
+                scale: Tween(begin: 0.8, end: 1.0).animate(animation),
+                child: FadeTransition(opacity: animation, child: child),
               ),
-              // The label only shows on the selected tab, sliding open; it
-              // may shrink (and fade out at the edge) on a narrow phone.
-              Flexible(
-                child: AnimatedSize(
-                  duration: Motion.medium,
-                  curve: Motion.curve,
-                  child: selected
-                      ? Padding(
-                          padding: const EdgeInsets.only(left: Space.sm),
-                          child: Text(
-                            tab.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.fade,
-                            softWrap: false,
-                            style: ShopType.body(context).copyWith(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: onPill,
-                            ),
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
+              child: Icon(selected ? tab.activeIcon : tab.icon, key: ValueKey(selected), size: 23, color: color),
+            ),
+            const SizedBox(height: 3),
+            AnimatedDefaultTextStyle(
+              duration: Motion.fast,
+              style: ShopType.caption(context).copyWith(
+                fontSize: 10.5,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                letterSpacing: 0.1,
+                color: color,
               ),
-            ],
-          ),
+              child: Text(tab.label, maxLines: 1, overflow: TextOverflow.clip, softWrap: false),
+            ),
+          ],
         ),
       ),
     );

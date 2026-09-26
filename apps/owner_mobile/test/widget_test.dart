@@ -502,17 +502,19 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('only the selected tab shows its label, and it moves with the selection', (tester) async {
+  testWidgets('every tab is labeled, and the selection moves with a tap', (tester) async {
     await _pumpApp(tester, initial: _connected);
-    Finder label(String tab) => find.descendant(of: find.byType(ShopTabBar), matching: find.text(tab));
-
-    expect(label('Today'), findsOneWidget);
-    expect(label('Stock'), findsNothing);
+    for (final tab in ['Today', 'Sales', 'Stock', 'Money', 'More']) {
+      expect(find.descendant(of: find.byType(ShopTabBar), matching: find.text(tab)), findsOneWidget, reason: tab);
+    }
+    Matcher selected(bool on) => isSemantics(isSelected: on);
+    expect(tester.getSemantics(find.byKey(const ValueKey('tab-Today'))), selected(true));
+    expect(tester.getSemantics(find.byKey(const ValueKey('tab-Stock'))), selected(false));
 
     await tester.tap(find.byKey(const ValueKey('tab-Stock')));
     await tester.pumpAndSettle();
-    expect(label('Stock'), findsOneWidget);
-    expect(label('Today'), findsNothing);
+    expect(tester.getSemantics(find.byKey(const ValueKey('tab-Stock'))), selected(true));
+    expect(tester.getSemantics(find.byKey(const ValueKey('tab-Today'))), selected(false));
   });
 
   testWidgets('tapping the current tab again returns to its first screen', (tester) async {
