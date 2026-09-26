@@ -4,8 +4,10 @@ import 'package:shop_core/calculations/report_calculations.dart';
 import 'package:shop_core/calculations/sales_grouping.dart';
 import 'package:shop_core/core/format/money_format.dart';
 
+import '../../../core/theme/shop_ui.dart';
 import '../../viewmodels/sales_view_model.dart';
 import '../../widgets/sale_tile.dart';
+import '../../widgets/ui/section.dart';
 import 'sale_detail_screen.dart';
 
 /// Every sale in the chosen period, grouped by day with each day's total.
@@ -23,7 +25,6 @@ class SalesScreen extends StatelessWidget {
     final vm = context.watch<SalesViewModel>();
     final summary = vm.summary;
     final days = vm.days;
-    final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
 
     return CupertinoPageScaffold(
       child: CustomScrollView(
@@ -32,7 +33,7 @@ class SalesScreen extends StatelessWidget {
           CupertinoSliverRefreshControl(onRefresh: context.read<SalesViewModel>().load),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -45,15 +46,35 @@ class SalesScreen extends StatelessWidget {
                       for (final range in SalesViewModel.ranges) range: Text(_rangeLabels[range]!),
                     },
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    summary.saleCount == 0
-                        ? 'No sales'
-                        : '${pesoWhole.format(summary.revenue)} · ${summary.saleCount} '
-                            '${summary.saleCount == 1 ? 'sale' : 'sales'} · ${summary.itemsSold} '
-                            '${summary.itemsSold == 1 ? 'piece' : 'pieces'}',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 15, color: secondary),
+                  const SizedBox(height: Space.lg),
+                  // The period's total, left-aligned and large; it changes
+                  // with a quick cross-fade as the period switches.
+                  AnimatedSwitcher(
+                    duration: Motion.medium,
+                    switchInCurve: Motion.curve,
+                    layoutBuilder: (current, previous) => Stack(
+                      alignment: Alignment.topLeft,
+                      children: [...previous, ?current],
+                    ),
+                    child: Padding(
+                      key: ValueKey((vm.range, summary.revenue, summary.saleCount)),
+                      padding: const EdgeInsets.symmetric(horizontal: Space.xs),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(pesoWhole.format(summary.revenue), style: ShopType.hero(context)),
+                          const SizedBox(height: Space.xs),
+                          Text(
+                            summary.saleCount == 0
+                                ? 'No sales'
+                                : '${summary.saleCount} ${summary.saleCount == 1 ? 'sale' : 'sales'} · '
+                                    '${summary.itemsSold} ${summary.itemsSold == 1 ? 'piece' : 'pieces'} · '
+                                    'average ${pesoWhole.format(summary.averageSale)}',
+                            style: ShopType.subhead(context),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -64,16 +85,13 @@ class SalesScreen extends StatelessWidget {
           else if (days.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(40),
-                  child: Text(
-                    vm.range == ReportRange.today
-                        ? 'No sales yet today. They show up here as the shop computer rings them up.'
-                        : 'No sales in this period.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 15, color: secondary),
-                  ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(Space.gutter + Space.xs, Space.xl, Space.gutter + Space.xs, 0),
+                child: Text(
+                  vm.range == ReportRange.today
+                      ? 'No sales yet today. They show up here as the shop computer rings them up.'
+                      : 'No sales in this period.',
+                  style: ShopType.subhead(context),
                 ),
               ),
             )
@@ -82,13 +100,9 @@ class SalesScreen extends StatelessWidget {
               itemCount: days.length,
               itemBuilder: (context, i) {
                 final day = days[i];
-                return CupertinoListSection.insetGrouped(
-                  header: Row(
-                    children: [
-                      Expanded(child: Text(dayLabel(day.day, vm.now).toUpperCase())),
-                      Text(pesoWhole.format(day.total)),
-                    ],
-                  ),
+                return GroupedSection(
+                  title: dayLabel(day.day, vm.now),
+                  trailing: pesoWhole.format(day.total),
                   children: [
                     for (final sale in day.sales)
                       SaleTile(
@@ -102,7 +116,7 @@ class SalesScreen extends StatelessWidget {
                 );
               },
             ),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          const SliverToBoxAdapter(child: SizedBox(height: Space.xxl)),
         ],
       ),
     );

@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:shop_core/core/format/money_format.dart';
 import 'package:shop_core/domain/entities/item.dart';
 
-import '../../../core/theme/cupertino_theme.dart';
+import '../../../core/theme/shop_ui.dart';
 import '../../viewmodels/stock_view_model.dart';
 import '../../widgets/item_photo.dart';
+import '../../widgets/ui/badges.dart';
+import '../../widgets/ui/section.dart';
 import 'item_detail_screen.dart';
 
 /// Every item in a photo grid, searchable, and filtered by how much is left.
@@ -16,7 +18,6 @@ class StockScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<StockViewModel>();
     final items = vm.items;
-    final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
 
     String label(StockFilter f, String name) {
       final n = vm.count(f);
@@ -30,12 +31,12 @@ class StockScreen extends StatelessWidget {
           CupertinoSliverRefreshControl(onRefresh: context.read<StockViewModel>().load),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   CupertinoSearchTextField(placeholder: 'Search items', onChanged: vm.search),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: Space.md),
                   CupertinoSlidingSegmentedControl<StockFilter>(
                     groupValue: vm.filter,
                     onValueChanged: (f) {
@@ -48,16 +49,18 @@ class StockScreen extends StatelessWidget {
                         (StockFilter.soldOut, 'Sold out'),
                       ])
                         f: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: Space.xs),
                           child: FittedBox(fit: BoxFit.scaleDown, child: Text(label(f, name))),
                         ),
                     },
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '${vm.count(StockFilter.all)} items · ${vm.totalPieces} pieces on hand',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13, color: secondary),
+                  const SizedBox(height: Space.md),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: Space.xs),
+                    child: Text(
+                      '${vm.count(StockFilter.all)} items · ${vm.totalPieces} pieces on hand',
+                      style: ShopType.footnote(context),
+                    ),
                   ),
                 ],
               ),
@@ -66,34 +69,30 @@ class StockScreen extends StatelessWidget {
           if (!vm.loaded)
             const SliverFillRemaining(hasScrollBody: false, child: Center(child: CupertinoActivityIndicator()))
           else if (items.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(40),
-                  child: Text(
-                    vm.query.trim().isNotEmpty
-                        ? 'No items match "${vm.query.trim()}".'
-                        : switch (vm.filter) {
-                            StockFilter.all => 'No items yet. They show up here once added on the shop computer.',
-                            StockFilter.low => 'Nothing is running low.',
-                            StockFilter.soldOut => 'Nothing is sold out.',
-                          },
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 15, color: secondary),
-                  ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(Space.gutter + Space.xs, Space.lg, Space.gutter + Space.xs, 0),
+                child: Text(
+                  vm.query.trim().isNotEmpty
+                      ? 'No items match "${vm.query.trim()}".'
+                      : switch (vm.filter) {
+                          StockFilter.all => 'No items yet. They show up here once added on the shop computer.',
+                          StockFilter.low => 'Nothing is running low.',
+                          StockFilter.soldOut => 'Nothing is sold out.',
+                        },
+                  style: ShopType.subhead(context),
                 ),
               ),
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.xxl),
               sliver: SliverGrid.builder(
                 gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: 220,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 0.7,
+                  mainAxisSpacing: Space.lg,
+                  crossAxisSpacing: Space.md,
+                  childAspectRatio: 0.66,
                 ),
                 itemCount: items.length,
                 itemBuilder: (context, i) => _ItemCard(item: items[i]),
@@ -105,6 +104,8 @@ class StockScreen extends StatelessWidget {
   }
 }
 
+/// A photo with its stock status on it, and the name and price beneath —
+/// no card chrome around the text, so the photos carry the grid.
 class _ItemCard extends StatelessWidget {
   const _ItemCard({required this.item});
   final Item item;
@@ -112,46 +113,48 @@ class _ItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.read<StockViewModel>();
-    final tokens = shopTokens(context);
-    final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
-    final (stockText, stockColor) = vm.isSoldOut(item)
-        ? ('Sold out', tokens.danger)
+    final colors = ShopColors.of(context);
+    final status = vm.isSoldOut(item)
+        ? Pill(text: 'Sold out', color: colors.danger, solid: true)
         : vm.isLow(item)
-            ? ('${item.qtyOnHand} left', tokens.warning)
-            : ('${item.qtyOnHand} left', secondary);
+            ? Pill(text: '${item.qtyOnHand} left', color: colors.warning, solid: true)
+            : null;
 
-    return GestureDetector(
+    return Pressable(
+      scale: true,
       onTap: () => Navigator.of(context).push(
         CupertinoPageRoute<void>(builder: (_) => ItemDetailScreen(itemId: item.id)),
       ),
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: ItemPhoto(imagePath: item.imagePath, name: item.name)),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(Radii.photo),
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15)),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${peso.format(item.unitPrice)} · $stockText',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 13, color: stockColor),
-                  ),
+                  ItemPhoto(imagePath: item.imagePath, name: item.name),
+                  if (status != null) Positioned(left: Space.sm, top: Space.sm, child: status),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: Space.sm),
+          Text(
+            item.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: ShopType.body(context).copyWith(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: Space.xxs),
+          Text(
+            vm.isSoldOut(item) ? peso.format(item.unitPrice) : '${peso.format(item.unitPrice)} · ${item.qtyOnHand} on hand',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: ShopType.footnote(context).copyWith(fontFeatures: ShopType.tabular),
+          ),
+        ],
       ),
     );
   }

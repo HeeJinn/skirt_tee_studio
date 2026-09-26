@@ -8,9 +8,11 @@ import 'package:shop_core/domain/entities/cloud_sync.dart';
 import 'package:shop_core/domain/entities/sale.dart';
 import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 
-import '../../../core/theme/cupertino_theme.dart';
+import '../../../core/theme/shop_ui.dart';
 import '../../viewmodels/today_view_model.dart';
 import '../../widgets/sale_tile.dart';
+import '../../widgets/ui/badges.dart';
+import '../../widgets/ui/section.dart';
 import '../more/more_screen.dart';
 import '../sales/sale_detail_screen.dart';
 import 'today_snapshot.dart';
@@ -35,16 +37,15 @@ class TodayScreen extends StatelessWidget {
             SliverList.list(
               children: [
                 _Header(day: snapshot.day),
-                _Tiles(snapshot: snapshot),
-                _SectionTitle('Last 7 days'),
-                _WeekChart(days: snapshot.lastSevenDays),
+                _HeroCard(snapshot: snapshot),
+                _StatRow(snapshot: snapshot),
                 _Attention(snapshot: snapshot),
                 _LatestSales(sales: snapshot.latestSales, day: snapshot.day),
                 if (snapshot.hasUncostedSales)
-                  const _Footnote(
-                    'Some of today\'s pieces have no recorded cost, so they count as ₱0 cost and profit reads high.',
+                  const SectionFooter(
+                    "Some of today's pieces have no recorded cost, so they count as ₱0 cost and profit reads high.",
                   ),
-                const SizedBox(height: 24),
+                const SizedBox(height: Space.xxl),
               ],
             ),
         ],
@@ -53,7 +54,8 @@ class TodayScreen extends StatelessWidget {
   }
 }
 
-/// The date, and whether the phone has the shop computer's latest.
+/// The date on the left, whether the phone has the shop computer's latest
+/// on the right.
 class _Header extends StatelessWidget {
   const _Header({required this.day});
   final DateTime day;
@@ -61,172 +63,92 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sync = context.watch<CloudSyncViewModel>().state;
-    final tokens = shopTokens(context);
-    final color = switch (sync.status) {
-      CloudStatus.upToDate => tokens.success,
-      CloudStatus.offline || CloudStatus.paused => tokens.warning,
-      _ => CupertinoColors.secondaryLabel.resolveFrom(context),
+    final colors = ShopColors.of(context);
+    final (color, icon) = switch (sync.status) {
+      CloudStatus.upToDate => (colors.success, CupertinoIcons.checkmark_alt),
+      CloudStatus.offline || CloudStatus.paused => (colors.warning, CupertinoIcons.wifi_slash),
+      _ => (colors.secondaryInk, CupertinoIcons.arrow_2_circlepath),
     };
-    // Two lines rather than one row, so large text sizes still fit.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.fromLTRB(Space.gutter + Space.xs, 0, Space.gutter, Space.md),
+      child: Wrap(
+        spacing: Space.sm,
+        runSpacing: Space.xs,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.spaceBetween,
         children: [
-          Text(
-            DateFormat('EEEE, MMM d').format(day),
-            style: TextStyle(fontSize: 15, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
-          ),
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              Icon(
-                sync.status == CloudStatus.upToDate ? CupertinoIcons.checkmark_circle : CupertinoIcons.cloud,
-                size: 16,
-                color: color,
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  'Shop data ${syncLabel(sync).toLowerCase()}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, color: color),
-                ),
-              ),
-            ],
-          ),
+          Text(DateFormat('EEEE, MMMM d').format(day), style: ShopType.subhead(context)),
+          Pill(text: syncLabel(sync), color: color, icon: icon),
         ],
       ),
     );
   }
 }
 
-class _Tiles extends StatelessWidget {
-  const _Tiles({required this.snapshot});
+/// The one figure the owners open the app for — today's sales — on the
+/// shop's mist, with the week behind it.
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({required this.snapshot});
   final TodaySnapshot snapshot;
 
   @override
   Widget build(BuildContext context) {
-    final lastWeekDay = DateFormat('EEE').format(snapshot.day.subtract(const Duration(days: 7)));
-    final today = snapshot.today;
-    final before = snapshot.sameDayLastWeek;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 1.55,
-        children: [
-          _Tile(
-            label: 'Sales',
-            value: pesoWhole.format(today.revenue),
-            change: changeFrom(before.revenue, today.revenue),
-            versus: 'last $lastWeekDay',
-          ),
-          _Tile(
-            label: 'Gross profit',
-            value: signedPeso(snapshot.todayGrossProfit, whole: true),
-            change: changeFrom(snapshot.sameDayLastWeekGrossProfit, snapshot.todayGrossProfit),
-            versus: 'last $lastWeekDay',
-          ),
-          _Tile(
-            label: 'Sales made',
-            value: '${today.saleCount}',
-            change: changeFrom(before.saleCount.toDouble(), today.saleCount.toDouble()),
-            versus: 'last $lastWeekDay',
-          ),
-          _Tile(
-            label: 'Pieces sold',
-            value: '${today.itemsSold}',
-            change: changeFrom(before.itemsSold.toDouble(), today.itemsSold.toDouble()),
-            versus: 'last $lastWeekDay',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Tile extends StatelessWidget {
-  const _Tile({required this.label, required this.value, required this.change, required this.versus});
-
-  final String label;
-  final String value;
-
-  /// Null when last week had nothing to compare with.
-  final double? change;
-  final String versus;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = shopTokens(context);
-    final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
-    final change = this.change;
-    final (changeText, changeColor) = switch (change) {
-      null => ('Nothing $versus', secondary),
-      final c when c.abs() < 0.005 => ('Same as $versus', secondary),
-      final c => ('${c > 0 ? '+' : '−'}${(c.abs() * 100).round()}% vs $versus', c > 0 ? tokens.success : tokens.danger),
-    };
+    final colors = ShopColors.of(context);
+    final lastWeekDay = DateFormat('EEEE').format(snapshot.day.subtract(const Duration(days: 7)));
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
-        borderRadius: BorderRadius.circular(12),
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: Space.gutter),
+      padding: const EdgeInsets.fromLTRB(Space.lg + Space.xs, Space.lg + Space.xs, Space.lg + Space.xs, Space.md),
+      decoration: BoxDecoration(color: colors.hero, borderRadius: BorderRadius.circular(Radii.card)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontSize: 13, color: secondary)),
+          Text('Sales today', style: ShopType.label(context).copyWith(color: colors.ink.withValues(alpha: 0.7))),
+          const SizedBox(height: Space.xs),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w600)),
+            child: Text(pesoWhole.format(snapshot.today.revenue), style: ShopType.hero(context)),
           ),
-          Text(changeText, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: changeColor)),
+          const SizedBox(height: Space.sm),
+          Wrap(
+            spacing: Space.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              DeltaPill(change: changeFrom(snapshot.sameDayLastWeek.revenue, snapshot.today.revenue)),
+              Text(
+                'vs last $lastWeekDay · ${pesoWhole.format(snapshot.sameDayLastWeek.revenue)}',
+                style: ShopType.footnote(context).copyWith(color: colors.ink.withValues(alpha: 0.65)),
+              ),
+            ],
+          ),
+          const SizedBox(height: Space.lg),
+          _WeekBars(days: snapshot.lastSevenDays),
         ],
       ),
     );
   }
 }
 
-/// Sales per day for the last week, today's bar in the shop's color.
-class _WeekChart extends StatelessWidget {
-  const _WeekChart({required this.days});
+/// The last seven days as quiet bars, today's in full ink.
+class _WeekBars extends StatelessWidget {
+  const _WeekBars({required this.days});
   final List<DailyRevenue> days;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = shopTokens(context);
-    final brand = CupertinoTheme.of(context).primaryColor;
-    final muted = CupertinoColors.systemGrey3.resolveFrom(context);
-    final label = CupertinoColors.secondaryLabel.resolveFrom(context);
+    final colors = ShopColors.of(context);
     final top = days.fold<double>(0, (m, d) => d.amount > m ? d.amount : m);
-    final ceiling = top == 0 ? 1.0 : niceCeiling(top);
+    final label = ShopType.caption(context).copyWith(color: colors.ink.withValues(alpha: 0.6));
 
-    return Container(
-      height: 170,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
-      decoration: BoxDecoration(
-        color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return SizedBox(
+      height: 96,
       child: BarChart(
         BarChartData(
           minY: 0,
-          maxY: ceiling,
-          alignment: BarChartAlignment.spaceAround,
+          maxY: top == 0 ? 1 : top * 1.05,
+          alignment: BarChartAlignment.spaceBetween,
           borderData: FlBorderData(show: false),
-          gridData: FlGridData(
-            drawVerticalLine: false,
-            horizontalInterval: ceiling / 2,
-            getDrawingHorizontalLine: (_) => FlLine(color: tokens.chartGrid, strokeWidth: 1),
-          ),
+          gridData: const FlGridData(show: false),
           titlesData: FlTitlesData(
             topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -234,15 +156,16 @@ class _WeekChart extends StatelessWidget {
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 22,
+                reservedSize: 20,
                 getTitlesWidget: (value, meta) {
                   final i = value.toInt();
                   if (i < 0 || i >= days.length) return const SizedBox.shrink();
+                  final isToday = i == days.length - 1;
                   return Padding(
-                    padding: const EdgeInsets.only(top: 6),
+                    padding: const EdgeInsets.only(top: Space.xs),
                     child: Text(
-                      i == days.length - 1 ? 'Today' : DateFormat('EEE').format(days[i].date),
-                      style: TextStyle(fontSize: 11, color: label),
+                      DateFormat('EEEEE').format(days[i].date),
+                      style: isToday ? label.copyWith(color: colors.ink, fontWeight: FontWeight.w700) : label,
                     ),
                   );
                 },
@@ -251,16 +174,13 @@ class _WeekChart extends StatelessWidget {
           ),
           barTouchData: BarTouchData(
             touchTooltipData: BarTouchTooltipData(
-              getTooltipColor: (_) => CupertinoColors.label.resolveFrom(context),
-              tooltipBorderRadius: BorderRadius.circular(8),
+              getTooltipColor: (_) => colors.ink,
+              tooltipBorderRadius: BorderRadius.circular(Radii.badge),
               getTooltipItem: (group, _, rod, _) => BarTooltipItem(
                 '${DateFormat('EEE, MMM d').format(days[group.x].date)}\n',
-                TextStyle(fontSize: 12, color: CupertinoColors.systemBackground.resolveFrom(context)),
+                ShopType.caption(context).copyWith(color: colors.card),
                 children: [
-                  TextSpan(
-                    text: pesoWhole.format(rod.toY),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
+                  TextSpan(text: pesoWhole.format(rod.toY), style: const TextStyle(fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -271,10 +191,11 @@ class _WeekChart extends StatelessWidget {
                 x: i,
                 barRods: [
                   BarChartRodData(
-                    toY: days[i].amount,
-                    color: i == days.length - 1 ? brand : muted,
-                    width: 18,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                    // A sliver even on ₱0 days, so the week reads as seven days.
+                    toY: days[i].amount == 0 ? (top == 0 ? 0.02 : top * 0.02) : days[i].amount,
+                    color: i == days.length - 1 ? colors.ink : colors.ink.withValues(alpha: 0.18),
+                    width: 22,
+                    borderRadius: BorderRadius.circular(Radii.badge - 2),
                   ),
                 ],
               ),
@@ -285,50 +206,116 @@ class _WeekChart extends StatelessWidget {
   }
 }
 
+/// The day's other figures in one quiet row, rather than three more cards.
+class _StatRow extends StatelessWidget {
+  const _StatRow({required this.snapshot});
+  final TodaySnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ShopColors.of(context);
+    final today = snapshot.today;
+    final before = snapshot.sameDayLastWeek;
+    final stats = [
+      ('Gross profit', signedPeso(snapshot.todayGrossProfit, whole: true),
+          changeFrom(snapshot.sameDayLastWeekGrossProfit, snapshot.todayGrossProfit)),
+      ('Sales made', '${today.saleCount}', changeFrom(before.saleCount.toDouble(), today.saleCount.toDouble())),
+      ('Pieces sold', '${today.itemsSold}', changeFrom(before.itemsSold.toDouble(), today.itemsSold.toDouble())),
+    ];
+    return Container(
+      margin: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
+      padding: const EdgeInsets.symmetric(vertical: Space.lg),
+      decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(Radii.card)),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            for (var i = 0; i < stats.length; i++) ...[
+              if (i > 0) Container(width: 0.5, color: colors.hairline),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(stats[i].$1, style: ShopType.label(context), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: Space.xs),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(stats[i].$2, style: ShopType.stat(context)),
+                      ),
+                      const SizedBox(height: Space.xs),
+                      _Change(change: stats[i].$3),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A compact change for the stat row: "↑ 250%" in green, "↓ 12%" in red.
+class _Change extends StatelessWidget {
+  const _Change({required this.change});
+  final double? change;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ShopColors.of(context);
+    final c = change;
+    final style = ShopType.caption(context).copyWith(fontWeight: FontWeight.w600, fontFeatures: ShopType.tabular);
+    if (c == null) return Text('—', style: style.copyWith(color: colors.tertiaryInk));
+    if (c.abs() < 0.005) return Text('Same', style: style);
+    final up = c > 0;
+    return Text(
+      '${up ? '↑' : '↓'} ${(c.abs() * 100).round()}%',
+      style: style.copyWith(color: up ? colors.success : colors.danger),
+    );
+  }
+}
+
 class _Attention extends StatelessWidget {
   const _Attention({required this.snapshot});
   final TodaySnapshot snapshot;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = shopTokens(context);
+    final colors = ShopColors.of(context);
     String plural(int n, String one, String many) => n == 1 ? one : many;
 
     final rows = <Widget>[
       if (snapshot.soldOut.isNotEmpty)
-        _AttentionRow(
-          icon: CupertinoIcons.xmark_circle,
-          color: tokens.danger,
-          title: '${snapshot.soldOut.length} ${plural(snapshot.soldOut.length, 'item', 'items')} sold out',
+        ValueRow(
+          leading: IconBadge(icon: CupertinoIcons.xmark, color: colors.danger),
+          label: '${snapshot.soldOut.length} ${plural(snapshot.soldOut.length, 'item', 'items')} sold out',
           detail: _names(snapshot.soldOut.map((i) => i.name)),
         ),
       if (snapshot.lowStock.isNotEmpty)
-        _AttentionRow(
-          icon: CupertinoIcons.exclamationmark_triangle,
-          color: tokens.warning,
-          title: '${snapshot.lowStock.length} ${plural(snapshot.lowStock.length, 'item', 'items')} low on stock',
+        ValueRow(
+          leading: IconBadge(icon: CupertinoIcons.exclamationmark, color: colors.warning),
+          label: '${snapshot.lowStock.length} ${plural(snapshot.lowStock.length, 'item', 'items')} low on stock',
           detail: _names(snapshot.lowStock.map((i) => '${i.name} (${i.qtyOnHand})')),
         ),
       if (snapshot.pickupsOverdue > 0)
-        _AttentionRow(
-          icon: CupertinoIcons.clock,
-          color: tokens.danger,
-          title: '${snapshot.pickupsOverdue} ${plural(snapshot.pickupsOverdue, 'pickup', 'pickups')} overdue',
+        ValueRow(
+          leading: IconBadge(icon: CupertinoIcons.clock, color: colors.danger),
+          label: '${snapshot.pickupsOverdue} ${plural(snapshot.pickupsOverdue, 'pickup', 'pickups')} overdue',
         ),
       if (snapshot.pickupsDueToday > 0)
-        _AttentionRow(
-          icon: CupertinoIcons.calendar,
-          color: CupertinoTheme.of(context).primaryColor,
-          title: '${snapshot.pickupsDueToday} ${plural(snapshot.pickupsDueToday, 'pickup', 'pickups')} due today',
+        ValueRow(
+          leading: IconBadge(icon: CupertinoIcons.bag, color: colors.accent),
+          label: '${snapshot.pickupsDueToday} ${plural(snapshot.pickupsDueToday, 'pickup', 'pickups')} due today',
         ),
     ];
 
-    return CupertinoListSection.insetGrouped(
-      header: const Text('NEEDS ATTENTION'),
+    return GroupedSection(
+      title: 'Needs attention',
       children: rows.isEmpty
-          ? [
-              _AttentionRow(icon: CupertinoIcons.checkmark_circle, color: tokens.success, title: 'All clear'),
-            ]
+          ? [ValueRow(leading: IconBadge(icon: CupertinoIcons.checkmark, color: colors.success), label: 'All clear')]
           : rows,
     );
   }
@@ -341,22 +328,6 @@ class _Attention extends StatelessWidget {
   }
 }
 
-class _AttentionRow extends StatelessWidget {
-  const _AttentionRow({required this.icon, required this.color, required this.title, this.detail});
-
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String? detail;
-
-  @override
-  Widget build(BuildContext context) => CupertinoListTile(
-        leading: Icon(icon, color: color),
-        title: Text(title),
-        subtitle: detail == null ? null : Text(detail!),
-      );
-}
-
 class _LatestSales extends StatelessWidget {
   const _LatestSales({required this.sales, required this.day});
   final List<Sale> sales;
@@ -364,10 +335,10 @@ class _LatestSales extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoListSection.insetGrouped(
-      header: const Text('LATEST SALES'),
+    return GroupedSection(
+      title: 'Latest sales',
       children: sales.isEmpty
-          ? [const CupertinoListTile(title: Text('No sales yet'))]
+          ? [const ValueRow(label: 'No sales yet', tone: ValueTone.muted)]
           : [
               for (final sale in sales)
                 SaleTile(
@@ -380,32 +351,4 @@ class _LatestSales extends StatelessWidget {
             ],
     );
   }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(36, 22, 20, 6),
-        child: Text(
-          text.toUpperCase(),
-          style: TextStyle(fontSize: 13, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
-        ),
-      );
-}
-
-class _Footnote extends StatelessWidget {
-  const _Footnote(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(36, 0, 36, 8),
-        child: Text(
-          text,
-          style: TextStyle(fontSize: 12, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
-        ),
-      );
 }

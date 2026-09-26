@@ -4,6 +4,8 @@ import 'package:shop_core/calculations/sales_grouping.dart';
 import 'package:shop_core/core/format/money_format.dart';
 import 'package:shop_core/domain/entities/sale.dart';
 
+import 'ui/section.dart';
+
 /// One sale in a list: what was bought, when and how it was paid, and the
 /// total. Worded like the shop computer's Sales screen (shared
 /// [saleSummary]).
@@ -20,11 +22,11 @@ class SaleTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final how = sale.paymentMethod?.label;
     final summary = saleSummary(sale);
-    return CupertinoListTile(
-      title: Text(summary.isEmpty ? 'Sale' : summary, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(how == null ? when : '$when · $how'),
-      additionalInfo: Text(peso.format(sale.totalAmount)),
-      trailing: onTap == null ? null : const CupertinoListTileChevron(),
+    return ValueRow(
+      label: summary.isEmpty ? 'Sale' : summary,
+      detail: how == null ? when : '$when · $how',
+      value: peso.format(sale.totalAmount),
+      labelLines: 1,
       onTap: onTap,
     );
   }

@@ -9,6 +9,7 @@ import 'package:owner_mobile/presentation/viewmodels/money_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/sales_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/stock_view_model.dart';
 import 'package:owner_mobile/presentation/viewmodels/today_view_model.dart';
+import 'package:owner_mobile/presentation/widgets/ui/section.dart';
 import 'package:shop_core/domain/entities/cloud_sync.dart';
 import 'package:shop_core/domain/entities/item.dart';
 import 'package:shop_core/domain/entities/money_entry.dart';
@@ -135,7 +136,7 @@ void main() {
 
     await tester.enterText(find.byType(CupertinoTextFormFieldRow).at(0), 'owner@example.com');
     await tester.enterText(find.byType(CupertinoTextFormFieldRow).at(1), 'wrong');
-    await tester.tap(find.text('Sign in'));
+    await tester.tap(find.widgetWithText(CupertinoButton, 'Sign in'));
     await tester.pumpAndSettle();
 
     expect(find.text("That email and password don't match."), findsOneWidget);
@@ -145,7 +146,7 @@ void main() {
   testWidgets('an empty email is caught before signing in', (tester) async {
     await _pumpApp(tester);
 
-    await tester.tap(find.text('Sign in'));
+    await tester.tap(find.widgetWithText(CupertinoButton, 'Sign in'));
     await tester.pumpAndSettle();
 
     expect(find.text("Enter the account's email."), findsOneWidget);
@@ -156,7 +157,7 @@ void main() {
 
     await tester.enterText(find.byType(CupertinoTextFormFieldRow).at(0), 'owner@example.com');
     await tester.enterText(find.byType(CupertinoTextFormFieldRow).at(1), FakeCloudSyncRepository.goodPassword);
-    await tester.tap(find.text('Sign in'));
+    await tester.tap(find.widgetWithText(CupertinoButton, 'Sign in'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -193,21 +194,23 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.descendant(of: find.byType(CupertinoActionSheet), matching: find.text('Sign out')));
     await tester.pumpAndSettle();
-    expect(find.text('SIGN IN'), findsOneWidget);
+    expect(find.textContaining('owner login'), findsOneWidget, reason: 'back on sign-in');
   });
 
   testWidgets("Today shows the day's numbers against last week, and what needs attention", (tester) async {
     await _pumpApp(tester, initial: _connected);
 
     expect(find.text('₱1,350'), findsOneWidget, reason: 'sales today');
-    expect(find.text('+50% vs last Sat'), findsNWidgets(3), reason: 'sales, profit, and pieces all rose by half');
-    expect(find.text('+100% vs last Sat'), findsOneWidget, reason: 'two sales against one');
+    expect(find.text('50%'), findsOneWidget, reason: 'sales up by half, in the hero');
+    expect(find.text('vs last Saturday · ₱900'), findsOneWidget);
+    expect(find.text('↑ 50%'), findsNWidgets(2), reason: 'profit and pieces also rose by half');
+    expect(find.text('↑ 100%'), findsOneWidget, reason: 'two sales against one');
     expect(find.text('₱750'), findsOneWidget, reason: 'gross profit: 3 × (₱450 − ₱200)');
     expect(find.text('1 item sold out'), findsOneWidget);
     expect(find.text('Basic tee'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('LATEST SALES'),
+      find.text('Latest sales'),
       200,
       scrollable: find.descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable)).first,
     );
@@ -239,8 +242,8 @@ void main() {
     await _pumpApp(tester, initial: _connected);
     await openSales(tester);
 
-    expect(find.text('₱1,350 · 2 sales · 3 pieces'), findsOneWidget);
-    expect(find.text('TODAY'), findsOneWidget);
+    expect(find.text('2 sales · 3 pieces · average ₱675'), findsOneWidget);
+    expect(find.descendant(of: find.byType(SectionHeader), matching: find.text('Today')), findsOneWidget);
     expect(find.text('Pleated skirt ×2'), findsOneWidget);
     expect(find.text('Pleated skirt'), findsOneWidget);
     expect(find.text('Basic tee ×2, Vintage blouse'), findsNothing, reason: "Tuesday's sale isn't today");
@@ -251,18 +254,18 @@ void main() {
     await openSales(tester);
 
     await pickRange(tester, '7 days');
-    expect(find.text('₱1,950 · 3 sales · 6 pieces'), findsOneWidget);
-    expect(find.text('TUE, SEP 22'), findsOneWidget);
+    expect(find.text('3 sales · 6 pieces · average ₱650'), findsOneWidget);
+    expect(find.text('Tue, Sep 22'), findsOneWidget);
     expect(find.text('Basic tee ×2, Vintage blouse'), findsOneWidget);
-    expect(find.text('SAT, SEP 19'), findsNothing);
+    expect(find.text('Sat, Sep 19'), findsNothing);
 
     await pickRange(tester, '30 days');
     await tester.scrollUntilVisible(
-      find.text('SAT, SEP 19'),
+      find.text('Sat, Sep 19'),
       200,
       scrollable: find.descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable)).first,
     );
-    expect(find.text('SAT, SEP 19'), findsOneWidget);
+    expect(find.text('Sat, Sep 19'), findsOneWidget);
   });
 
   testWidgets('a sale shows its payment, change, and what the shop made', (tester) async {
@@ -273,7 +276,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('₱900.00'), findsWidgets);
-    expect(find.text('Cash received'), findsOneWidget);
+    expect(find.text('Received'), findsOneWidget, reason: 'cash received');
     expect(find.text('₱1,000.00'), findsOneWidget);
     expect(find.text('₱100.00'), findsOneWidget, reason: 'change');
     expect(find.text('₱500.00'), findsOneWidget, reason: 'gross profit: 2 × (₱450 − ₱200)');
@@ -350,9 +353,11 @@ void main() {
     expect(find.text('Low (1)'), findsOneWidget);
     expect(find.text('Sold out (1)'), findsOneWidget);
     expect(find.text('Basic tee'), findsOneWidget);
-    expect(find.text('₱150.00 · Sold out'), findsOneWidget);
-    expect(find.text('₱600.00 · 3 left'), findsOneWidget);
-    expect(find.text('₱450.00 · 12 left'), findsOneWidget);
+    expect(find.text('₱150.00'), findsOneWidget, reason: 'sold out: price only');
+    expect(find.text('Sold out'), findsOneWidget, reason: 'the pill on its photo');
+    expect(find.text('3 left'), findsOneWidget, reason: 'the low-stock pill');
+    expect(find.text('₱600.00 · 3 on hand'), findsOneWidget);
+    expect(find.text('₱450.00 · 12 on hand'), findsOneWidget);
   });
 
   testWidgets('filters and search narrow the grid', (tester) async {
@@ -388,7 +393,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('₱200.00 each'), findsOneWidget);
-    expect(find.text('₱250.00 (56%)'), findsOneWidget);
+    expect(find.text('₱250'), findsOneWidget, reason: 'makes each');
+    expect(find.text('56% margin'), findsOneWidget);
     expect(find.text('₱2,400.00'), findsOneWidget, reason: '12 on hand × ₱200');
     expect(find.text('5 pieces'), findsOneWidget, reason: 'sold in the last 30 days: 2 + 1 + 2');
 
@@ -409,7 +415,7 @@ void main() {
 
     expect(find.text('Not recorded'), findsOneWidget);
     expect(find.textContaining('No cost recorded yet'), findsOneWidget);
-    expect(find.text('Makes per piece'), findsNothing);
+    expect(find.text('cost unknown'), findsOneWidget);
   });
 
   testWidgets('Stock and an item fit on a small phone', (tester) async {
@@ -441,11 +447,11 @@ void main() {
 
     // ₱470 earned since the books started, on ₱10,000 put in.
     expect(find.text('5%'), findsOneWidget);
-    expect(find.textContaining('₱470 earned of ₱10,000 put in'), findsOneWidget);
+    expect(find.text('₱470 earned back of ₱10,000 put in'), findsOneWidget);
     expect(find.text('Put in by Ana'), findsOneWidget);
     expect(find.text('₱9,470.00'), findsOneWidget, reason: 'still in the shop: 10,000 + 470 − 1,000 taken home');
     expect(find.text('₱2,400.00'), findsOneWidget, reason: 'stock on the rack: 12 skirts at ₱200');
-    expect(find.textContaining('books started on Sep 1, 2026'), findsOneWidget);
+    expect(find.textContaining('books started on September 1, 2026'), findsOneWidget);
   });
 
   testWidgets("Money breaks down the period's profit, like the shop computer", (tester) async {
@@ -454,7 +460,7 @@ void main() {
     await tester.scrollUntilVisible(find.text('Net profit'), 200, scrollable: moneyPage());
 
     // Last 30 days, from Sep 1 (the books started after the period did).
-    expect(find.text('PROFIT FROM SEP 1'), findsOneWidget);
+    expect(find.text('from Sep 1'), findsOneWidget);
     expect(find.text('₱2,850.00'), findsOneWidget, reason: 'sales');
     expect(find.text('₱1,670.00'), findsOneWidget, reason: 'gross profit');
     expect(find.text('Rent'), findsOneWidget);
@@ -465,7 +471,7 @@ void main() {
     await tester.tap(find.text('7 days'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Net profit'), 200, scrollable: moneyPage());
-    expect(find.text('PROFIT FROM SEP 20'), findsOneWidget);
+    expect(find.text('from Sep 20'), findsOneWidget);
     expect(find.text('₱970.00'), findsOneWidget, reason: 'no rent this week');
   });
 
@@ -479,7 +485,7 @@ void main() {
     await tester.tap(find.text('Money log'));
     await tester.pumpAndSettle();
 
-    expect(find.text('SEPTEMBER 2026'), findsOneWidget);
+    expect(find.text('September 2026'), findsOneWidget);
     expect(find.text('Stock from Divisoria bale'), findsOneWidget);
     expect(find.text('−₱2,800.00'), findsOneWidget);
     expect(find.text('Money put in'), findsOneWidget);

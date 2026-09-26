@@ -4,6 +4,10 @@ import 'package:provider/provider.dart';
 import 'package:shop_core/domain/entities/cloud_sync.dart';
 import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 
+import '../../../core/theme/shop_ui.dart';
+import '../../widgets/ui/badges.dart';
+import '../../widgets/ui/section.dart';
+
 /// Account and sync status for now; Reservations, Customers, Reports,
 /// Staff activity, and Settings join this list as they're built.
 class MoreScreen extends StatelessWidget {
@@ -15,7 +19,7 @@ class MoreScreen extends StatelessWidget {
       builder: (sheetContext) => CupertinoActionSheet(
         title: const Text('Sign out?'),
         message: const Text(
-          'The shop\'s data and photos are removed from this phone. They stay safe in the cloud and on the shop computer.',
+          "The shop's data and photos are removed from this phone. They stay safe in the cloud and on the shop computer.",
         ),
         actions: [
           CupertinoActionSheetAction(
@@ -39,6 +43,12 @@ class MoreScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final sync = context.watch<CloudSyncViewModel>();
     final state = sync.state;
+    final colors = ShopColors.of(context);
+    final syncColor = switch (state.status) {
+      CloudStatus.upToDate => colors.success,
+      CloudStatus.offline || CloudStatus.paused => colors.warning,
+      _ => colors.secondaryInk,
+    };
 
     return CupertinoPageScaffold(
       child: CustomScrollView(
@@ -46,30 +56,32 @@ class MoreScreen extends StatelessWidget {
           const CupertinoSliverNavigationBar(largeTitle: Text('More')),
           SliverList.list(
             children: [
-              CupertinoListSection.insetGrouped(
-                header: const Text('ACCOUNT'),
+              GroupedSection(
+                title: 'Account',
+                footer: 'This phone shows the shop computer\'s data. Changes are made on the shop computer.',
                 children: [
-                  CupertinoListTile(
-                    title: const Text('Signed in as'),
-                    additionalInfo: Text(state.email ?? 'Owner'),
+                  ValueRow(
+                    leading: IconBadge(icon: CupertinoIcons.person_fill, color: colors.accent),
+                    label: 'Signed in as',
+                    detail: state.email ?? 'Owner',
                   ),
-                  CupertinoListTile(
-                    title: const Text('Sync'),
-                    additionalInfo: Text(syncLabel(state)),
+                  ValueRow(
+                    leading: IconBadge(icon: CupertinoIcons.arrow_2_circlepath, color: syncColor),
+                    label: 'Sync',
+                    detail: syncLabel(state),
                   ),
                 ],
               ),
-              CupertinoListSection.insetGrouped(
+              GroupedSection(
                 children: [
-                  CupertinoListTile(
-                    title: Text(
-                      'Sign out',
-                      style: TextStyle(color: CupertinoColors.systemRed.resolveFrom(context)),
-                    ),
+                  ValueRow(
+                    label: 'Sign out',
+                    destructive: true,
                     onTap: sync.busy ? null : () => _confirmSignOut(context),
                   ),
                 ],
               ),
+              const SizedBox(height: Space.xxl),
             ],
           ),
         ],

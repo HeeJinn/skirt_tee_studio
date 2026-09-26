@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:shop_core/core/format/money_format.dart';
 import 'package:shop_core/domain/entities/item.dart';
 
-import '../../../core/theme/cupertino_theme.dart';
+import '../../../core/theme/shop_ui.dart';
 import '../../viewmodels/stock_view_model.dart';
 import '../../widgets/item_photo.dart';
+import '../../widgets/ui/badges.dart';
+import '../../widgets/ui/section.dart';
 import 'item_history.dart';
 
 /// One item: its photo, what it sells for and costs, how much is left and
@@ -31,31 +33,22 @@ class ItemDetailScreen extends StatelessWidget {
         previousPageTitle: 'Stock',
       ),
       child: SafeArea(
+        bottom: false,
         child: item == null
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(40),
-                  child: Text(
-                    'This item was removed on the shop computer.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 15, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
-                  ),
-                ),
+            ? Padding(
+                padding: const EdgeInsets.all(Space.xl),
+                child: Text('This item was removed on the shop computer.', style: ShopType.subhead(context)),
               )
             : ListView(
-                padding: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.only(bottom: Space.xxl + Space.xxl),
                 children: [
                   if (item.imagePath != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: AspectRatio(aspectRatio: 1, child: ItemPhoto(imagePath: item.imagePath, name: item.name)),
-                      ),
-                    ),
+                    // Full width, edge to edge: the photo is what identifies
+                    // the piece at a glance.
+                    AspectRatio(aspectRatio: 4 / 3, child: ItemPhoto(imagePath: item.imagePath, name: item.name)),
                   _Title(item: item),
-                  _Price(item: item),
-                  _Stock(item: item),
+                  _Figures(item: item),
+                  _Details(item: item),
                   _History(entries: vm.historyOf(item.id)),
                 ],
               ),
@@ -69,79 +62,112 @@ class _Title extends StatelessWidget {
   final Item item;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(item.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 2),
-            Text(
-              item.isBargain ? '${item.category} · Bargain' : item.category,
-              style: TextStyle(fontSize: 15, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
-            ),
-          ],
-        ),
-      );
-}
-
-class _Price extends StatelessWidget {
-  const _Price({required this.item});
-  final Item item;
-
-  @override
   Widget build(BuildContext context) {
-    final cost = item.unitCost;
-    final margin = cost == null ? null : item.unitPrice - cost;
-    final marginShare = margin == null || item.unitPrice == 0 ? null : margin / item.unitPrice;
-    return CupertinoListSection.insetGrouped(
-      header: const Text('PRICE'),
-      footer: cost == null ? const Text('No cost recorded yet, so what this item makes is unknown.') : null,
-      children: [
-        CupertinoListTile(title: const Text('Sells for'), additionalInfo: Text(peso.format(item.unitPrice))),
-        CupertinoListTile(
-          title: const Text('Costs'),
-          additionalInfo: Text(cost == null ? 'Not recorded' : '${peso.format(cost)} each'),
-        ),
-        if (margin != null)
-          CupertinoListTile(
-            title: const Text('Makes per piece'),
-            additionalInfo: Text(
-              marginShare == null ? signedPeso(margin) : '${signedPeso(margin)} (${(marginShare * 100).round()}%)',
-              style: TextStyle(color: margin < 0 ? shopTokens(context).danger : null),
-            ),
+    final colors = ShopColors.of(context);
+    final vm = context.read<StockViewModel>();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Space.gutter + Space.xs, Space.lg, Space.gutter + Space.xs, Space.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            item.name,
+            style: ShopType.section(context).copyWith(fontFamily: ShopType.serif, fontSize: 26, letterSpacing: -0.4),
           ),
-      ],
+          const SizedBox(height: Space.sm),
+          Wrap(
+            spacing: Space.sm,
+            runSpacing: Space.xs,
+            children: [
+              Pill(text: item.category, color: colors.secondaryInk),
+              if (item.isBargain) Pill(text: 'Bargain', color: colors.accent),
+              if (vm.isSoldOut(item))
+                Pill(text: 'Sold out', color: colors.danger)
+              else if (vm.isLow(item))
+                Pill(text: 'Low stock', color: colors.warning),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _Stock extends StatelessWidget {
-  const _Stock({required this.item});
+/// On hand, price, and what each piece makes, side by side.
+class _Figures extends StatelessWidget {
+  const _Figures({required this.item});
+  final Item item;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ShopColors.of(context);
+    final cost = item.unitCost;
+    final margin = cost == null ? null : item.unitPrice - cost;
+    final figures = [
+      ('On hand', '${item.qtyOnHand > 0 ? item.qtyOnHand : 0}', null),
+      ('Sells for', pesoWhole.format(item.unitPrice), null),
+      (
+        'Makes each',
+        margin == null ? '—' : signedPeso(margin, whole: true),
+        margin == null || item.unitPrice == 0 ? 'cost unknown' : '${(margin / item.unitPrice * 100).round()}% margin',
+      ),
+    ];
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: Space.gutter),
+      padding: const EdgeInsets.symmetric(vertical: Space.lg),
+      decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(Radii.card)),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            for (var i = 0; i < figures.length; i++) ...[
+              if (i > 0) Container(width: 0.5, color: colors.hairline),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(figures[i].$1, style: ShopType.label(context)),
+                      const SizedBox(height: Space.xs),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(figures[i].$2, style: ShopType.stat(context)),
+                      ),
+                      if (figures[i].$3 != null) ...[
+                        const SizedBox(height: Space.xs),
+                        Text(figures[i].$3!, style: ShopType.caption(context), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Details extends StatelessWidget {
+  const _Details({required this.item});
   final Item item;
 
   @override
   Widget build(BuildContext context) {
     final vm = context.read<StockViewModel>();
-    final tokens = shopTokens(context);
     final cost = item.unitCost;
     final onHand = item.qtyOnHand > 0 ? item.qtyOnHand : 0;
-    final (status, color) = vm.isSoldOut(item)
-        ? ('Sold out', tokens.danger)
-        : vm.isLow(item)
-            ? ('$onHand · low', tokens.warning)
-            : ('$onHand', null);
     final sold = vm.soldInLast30Days(item.id);
-    return CupertinoListSection.insetGrouped(
-      header: const Text('STOCK'),
+    return GroupedSection(
+      title: 'Details',
+      footer: cost == null ? "No cost recorded yet, so what this item makes is unknown." : null,
       children: [
-        CupertinoListTile(title: const Text('On hand'), additionalInfo: Text(status, style: TextStyle(color: color))),
-        if (cost != null)
-          CupertinoListTile(title: const Text('Worth, at cost'), additionalInfo: Text(peso.format(onHand * cost))),
-        CupertinoListTile(
-          title: const Text('Sold, last 30 days'),
-          additionalInfo: Text('$sold ${sold == 1 ? 'piece' : 'pieces'}'),
-        ),
+        ValueRow(label: 'Costs', value: cost == null ? 'Not recorded' : '${peso.format(cost)} each',
+            tone: cost == null ? ValueTone.muted : ValueTone.normal),
+        if (cost != null) ValueRow(label: 'Stock worth, at cost', value: peso.format(onHand * cost)),
+        ValueRow(label: 'Sold, last 30 days', value: '$sold ${sold == 1 ? 'piece' : 'pieces'}'),
       ],
     );
   }
@@ -153,32 +179,33 @@ class _History extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = shopTokens(context);
+    final colors = ShopColors.of(context);
     final shown = entries.take(ItemDetailScreen.historyLimit).toList();
     final hidden = entries.length - shown.length;
-    return CupertinoListSection.insetGrouped(
-      header: const Text('HISTORY'),
-      footer: hidden > 0 ? Text('Showing the latest ${shown.length} of ${entries.length} changes.') : null,
+
+    (IconData, Color) badgeFor(ItemHistoryEntry e) => switch (e.title) {
+          'Sold' => (CupertinoIcons.bag, colors.ink.withValues(alpha: colors.isDark ? 0.35 : 0.55)),
+          'Found' => (CupertinoIcons.search, colors.accent),
+          _ when e.change > 0 => (CupertinoIcons.cube_box, colors.accent),
+          _ => (CupertinoIcons.minus, colors.danger),
+        };
+
+    return GroupedSection(
+      title: 'History',
+      footer: hidden > 0 ? 'Showing the latest ${shown.length} of ${entries.length} changes.' : null,
       children: shown.isEmpty
-          ? [const CupertinoListTile(title: Text('No changes recorded'))]
+          ? [const ValueRow(label: 'No changes recorded', tone: ValueTone.muted)]
           : [
               for (final e in shown)
-                CupertinoListTile(
-                  title: Text(e.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  subtitle: Text(
-                    e.detail == null
-                        ? DateFormat('MMM d, y · h:mm a').format(e.at)
-                        : '${DateFormat('MMM d, y').format(e.at)} · ${e.detail}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  additionalInfo: Text(
-                    e.change > 0 ? '+${e.change}' : '−${-e.change}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: e.change > 0 ? tokens.success : CupertinoColors.label.resolveFrom(context),
-                    ),
-                  ),
+                ValueRow(
+                  leading: IconBadge(icon: badgeFor(e).$1, color: badgeFor(e).$2),
+                  label: e.title,
+                  labelLines: 1,
+                  detail: e.detail == null
+                      ? DateFormat('MMM d, y · h:mm a').format(e.at)
+                      : '${DateFormat('MMM d, y').format(e.at)} · ${e.detail}',
+                  value: e.change > 0 ? '+${e.change}' : '−${-e.change}',
+                  tone: e.change > 0 ? ValueTone.positive : ValueTone.strong,
                 ),
             ],
     );

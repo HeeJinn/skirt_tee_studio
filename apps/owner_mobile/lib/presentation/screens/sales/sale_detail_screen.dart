@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import 'package:shop_core/core/format/money_format.dart';
 import 'package:shop_core/domain/entities/sale.dart';
 
-import '../../../core/theme/cupertino_theme.dart';
+import '../../../core/theme/shop_ui.dart';
 import '../../viewmodels/sales_view_model.dart';
+import '../../widgets/ui/badges.dart';
+import '../../widgets/ui/section.dart';
 
 /// One sale: what was bought, how it was paid, and what the shop made on it.
 /// Looked up by id, so a sale voided on the shop computer while this page is
@@ -26,12 +28,18 @@ class SaleDetailScreen extends StatelessWidget {
       navigationBar: CupertinoNavigationBar(middle: const Text('Sale'), previousPageTitle: backLabel),
       child: SafeArea(
         child: sale == null
-            ? const _Voided()
+            ? Padding(
+                padding: const EdgeInsets.all(Space.xl),
+                child: Text(
+                  'This sale was voided on the shop computer, and its pieces went back into stock.',
+                  style: ShopType.subhead(context),
+                ),
+              )
             : ListView(
-                padding: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.fromLTRB(0, Space.lg, 0, Space.xxl),
                 children: [
-                  _Total(sale: sale),
-                  _Payment(sale: sale),
+                  _Receipt(sale: sale),
+                  if (sale.amountTendered != null) _Cash(sale: sale),
                   _Items(sale: sale),
                   _Profit(sale: sale),
                 ],
@@ -41,67 +49,67 @@ class SaleDetailScreen extends StatelessWidget {
   }
 }
 
-class _Voided extends StatelessWidget {
-  const _Voided();
-
-  @override
-  Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(40),
-          child: Text(
-            'This sale was voided on the shop computer, and its pieces went back into stock.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 15, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
-          ),
-        ),
-      );
-}
-
-class _Total extends StatelessWidget {
-  const _Total({required this.sale});
-  final Sale sale;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-        child: Column(
-          children: [
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(peso.format(sale.totalAmount), style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w700)),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              DateFormat('EEE, MMM d, y · h:mm a').format(sale.dateTime),
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
-            ),
-          ],
-        ),
-      );
-}
-
-class _Payment extends StatelessWidget {
-  const _Payment({required this.sale});
+/// The total, when, and how it was paid — on the shop's mist.
+class _Receipt extends StatelessWidget {
+  const _Receipt({required this.sale});
   final Sale sale;
 
   @override
   Widget build(BuildContext context) {
-    final tendered = sale.amountTendered;
-    final change = sale.changeGiven;
-    return CupertinoListSection.insetGrouped(
-      header: const Text('PAYMENT'),
-      children: [
-        CupertinoListTile(
-          title: const Text('Paid with'),
-          // Sales from before the shop recorded payment methods.
-          additionalInfo: Text(sale.paymentMethod?.label ?? 'Not recorded'),
-        ),
-        if (tendered != null) CupertinoListTile(title: const Text('Cash received'), additionalInfo: Text(peso.format(tendered))),
-        if (change != null) CupertinoListTile(title: const Text('Change'), additionalInfo: Text(peso.format(change))),
-      ],
+    final colors = ShopColors.of(context);
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: Space.gutter),
+      padding: const EdgeInsets.all(Space.lg + Space.xs),
+      decoration: BoxDecoration(color: colors.hero, borderRadius: BorderRadius.circular(Radii.card)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            DateFormat('EEEE, MMMM d · h:mm a').format(sale.dateTime),
+            style: ShopType.label(context).copyWith(color: colors.ink.withValues(alpha: 0.7)),
+          ),
+          const SizedBox(height: Space.xs),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(peso.format(sale.totalAmount), style: ShopType.hero(context)),
+          ),
+          const SizedBox(height: Space.sm),
+          Wrap(
+            spacing: Space.sm,
+            runSpacing: Space.xs,
+            children: [
+              Pill(
+                // Sales from before the shop recorded payment methods.
+                text: sale.paymentMethod?.label ?? 'Payment not recorded',
+                color: colors.ink,
+                icon: CupertinoIcons.creditcard,
+              ),
+              Pill(
+                text: '${sale.totalItemsSold} ${sale.totalItemsSold == 1 ? 'piece' : 'pieces'}',
+                color: colors.ink,
+                icon: CupertinoIcons.bag,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
+}
+
+class _Cash extends StatelessWidget {
+  const _Cash({required this.sale});
+  final Sale sale;
+
+  @override
+  Widget build(BuildContext context) => GroupedSection(
+        title: 'Cash',
+        children: [
+          ValueRow(label: 'Received', value: peso.format(sale.amountTendered!)),
+          if (sale.changeGiven != null) ValueRow(label: 'Change', value: peso.format(sale.changeGiven!)),
+        ],
+      );
 }
 
 class _Items extends StatelessWidget {
@@ -109,23 +117,19 @@ class _Items extends StatelessWidget {
   final Sale sale;
 
   @override
-  Widget build(BuildContext context) {
-    return CupertinoListSection.insetGrouped(
-      header: Text('${sale.totalItemsSold} ${sale.totalItemsSold == 1 ? 'PIECE' : 'PIECES'}'),
-      children: [
-        for (final line in sale.lineItems)
-          CupertinoListTile(
-            title: Text(line.itemName, maxLines: 2, overflow: TextOverflow.ellipsis),
-            subtitle: Text(
-              line.unitCost == null
+  Widget build(BuildContext context) => GroupedSection(
+        title: 'Items',
+        children: [
+          for (final line in sale.lineItems)
+            ValueRow(
+              label: line.itemName,
+              detail: line.unitCost == null
                   ? '${line.qty} × ${peso.format(line.unitPrice)} · cost not recorded'
                   : '${line.qty} × ${peso.format(line.unitPrice)} · cost ${peso.format(line.unitCost!)} each',
+              value: peso.format(line.subtotal),
             ),
-            additionalInfo: Text(peso.format(line.subtotal)),
-          ),
-      ],
-    );
-  }
+        ],
+      );
 }
 
 class _Profit extends StatelessWidget {
@@ -134,24 +138,20 @@ class _Profit extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = shopTokens(context);
     final cost = sale.lineItems.fold<double>(0, (sum, l) => sum + l.costOfGoods);
     final profit = sale.totalAmount - cost;
     final uncosted = sale.lineItems.any((l) => l.unitCost == null);
-    return CupertinoListSection.insetGrouped(
-      header: const Text('WHAT THE SHOP MADE'),
-      footer: uncosted
-          ? const Text('Pieces with no recorded cost count as ₱0 cost, so this profit reads high.')
-          : null,
+    return GroupedSection(
+      title: 'What the shop made',
+      footer: uncosted ? 'Pieces with no recorded cost count as ₱0 cost, so this profit reads high.' : null,
       children: [
-        CupertinoListTile(title: const Text('Sale'), additionalInfo: Text(peso.format(sale.totalAmount))),
-        CupertinoListTile(title: const Text('Cost of pieces'), additionalInfo: Text(minusPeso(cost))),
-        CupertinoListTile(
-          title: const Text('Gross profit', style: TextStyle(fontWeight: FontWeight.w600)),
-          additionalInfo: Text(
-            signedPeso(profit),
-            style: TextStyle(fontWeight: FontWeight.w600, color: profit < 0 ? tokens.danger : tokens.success),
-          ),
+        ValueRow(label: 'Sale', value: peso.format(sale.totalAmount)),
+        ValueRow(label: 'Cost of pieces', value: minusPeso(cost), indent: true),
+        ValueRow(
+          label: 'Gross profit',
+          detail: sale.totalAmount == 0 ? null : '${(profit / sale.totalAmount * 100).round()}% of the sale',
+          value: signedPeso(profit),
+          tone: profit < 0 ? ValueTone.negative : ValueTone.positive,
         ),
       ],
     );

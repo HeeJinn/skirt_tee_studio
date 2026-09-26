@@ -3,8 +3,9 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shop_core/core/format/money_format.dart';
 
-import '../../../core/theme/cupertino_theme.dart';
+import '../../../core/theme/shop_ui.dart';
 import '../../viewmodels/money_view_model.dart';
+import '../../widgets/ui/section.dart';
 
 /// Every entry the owners recorded — money put in, expenses, money taken
 /// home — and every stock purchase, newest first, grouped by month.
@@ -14,7 +15,6 @@ class MoneyLogScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final log = context.watch<MoneyViewModel>().log;
-    final tokens = shopTokens(context);
 
     final byMonth = <DateTime, List<MoneyLogEntry>>{};
     for (final e in log) {
@@ -25,37 +25,30 @@ class MoneyLogScreen extends StatelessWidget {
       navigationBar: const CupertinoNavigationBar(middle: Text('Money log'), previousPageTitle: 'Money'),
       child: SafeArea(
         child: log.isEmpty
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(40),
-                  child: Text(
-                    'Nothing recorded yet. Money put in, expenses, and stock bought show up here once recorded on the shop computer.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 15, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
-                  ),
+            ? Padding(
+                padding: const EdgeInsets.all(Space.xl),
+                child: Text(
+                  'Nothing recorded yet. Money put in, expenses, and stock bought show up here once recorded on the shop computer.',
+                  style: ShopType.subhead(context),
                 ),
               )
             : ListView(
-                padding: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.only(bottom: Space.xxl),
                 children: [
                   for (final MapEntry(key: month, value: entries) in byMonth.entries)
-                    CupertinoListSection.insetGrouped(
-                      header: Text(DateFormat('MMMM y').format(month).toUpperCase()),
+                    GroupedSection(
+                      title: DateFormat('MMMM y').format(month),
+                      trailing: _net(entries),
                       children: [
                         for (final e in entries)
-                          CupertinoListTile(
-                            title: Text(e.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                            subtitle: Text(
-                              e.detail == null || e.detail!.isEmpty
-                                  ? DateFormat('MMM d').format(e.at)
-                                  : '${DateFormat('MMM d').format(e.at)} · ${e.detail}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            additionalInfo: Text(
-                              e.isMoneyIn ? '+${peso.format(e.amount)}' : minusPeso(e.amount),
-                              style: TextStyle(color: e.isMoneyIn ? tokens.success : null),
-                            ),
+                          ValueRow(
+                            label: e.title,
+                            labelLines: 1,
+                            detail: e.detail == null || e.detail!.isEmpty
+                                ? DateFormat('MMM d').format(e.at)
+                                : '${DateFormat('MMM d').format(e.at)} · ${e.detail}',
+                            value: e.isMoneyIn ? '+${peso.format(e.amount)}' : minusPeso(e.amount),
+                            tone: e.isMoneyIn ? ValueTone.positive : ValueTone.normal,
                           ),
                       ],
                     ),
@@ -63,5 +56,11 @@ class MoneyLogScreen extends StatelessWidget {
               ),
       ),
     );
+  }
+
+  /// The month's money in less money out, for the heading.
+  static String _net(List<MoneyLogEntry> entries) {
+    final net = entries.fold<double>(0, (sum, e) => sum + (e.isMoneyIn ? e.amount : -e.amount));
+    return signedPeso(net, whole: true);
   }
 }

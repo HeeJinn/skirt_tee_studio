@@ -2,7 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 
+import '../../../core/theme/shop_ui.dart';
 import '../../widgets/shop_wordmark.dart';
+import '../../widgets/ui/section.dart';
 
 /// Sign in with the shop's owner account — the same login used under
 /// Settings → Cloud backup on the shop computer.
@@ -48,10 +50,11 @@ class _SignInScreenState extends State<SignInScreen> {
               padding: const EdgeInsets.symmetric(vertical: 32),
               children: [
                 const ShopWordmark(),
-                const SizedBox(height: 32),
+                const SizedBox(height: Space.xxl),
+                const SectionHeader('Sign in', top: 0),
                 CupertinoFormSection.insetGrouped(
-                  header: const Text('SIGN IN'),
-                  footer: const Text('Use the owner login from Settings → Cloud backup on the shop computer.'),
+                  // Sit on the shop's page color, not iOS grey.
+                  backgroundColor: const Color(0x00000000),
                   children: [
                     CupertinoTextFormFieldRow(
                       controller: _email,
@@ -74,14 +77,16 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                   ],
                 ),
+                const SectionFooter('Use the owner login from Settings → Cloud backup on the shop computer.'),
                 if (_error != null)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(36, 0, 36, 16),
+                    padding: const EdgeInsets.fromLTRB(Space.gutter + Space.lg, Space.md, Space.gutter + Space.lg, 0),
                     child: Text(
                       _error!,
-                      style: TextStyle(fontSize: 13, color: CupertinoColors.systemRed.resolveFrom(context)),
+                      style: ShopType.footnote(context).copyWith(color: ShopColors.of(context).danger),
                     ),
                   ),
+                const SizedBox(height: Space.xl),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: CupertinoButton.filled(
