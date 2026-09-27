@@ -76,7 +76,7 @@ flutter run -d windows
 
 Cloud backup needs a Supabase project and a PowerSync instance. A build without them runs offline-only, exactly as before.
 
-1. **Supabase:** apply the schema with the Supabase CLI (installed per-project: `npm install`), then create each owner's login under **Authentication → Users**:
+1. **Supabase:** apply the schema with the Supabase CLI (installed per-project: `npm install`), then create the first owner's login under **Authentication → Users** (for a second owner, see **Adding another owner** below):
 
    ```bash
    npx supabase login
@@ -96,6 +96,22 @@ Cloud backup needs a Supabase project and a PowerSync instance. A build without 
 **First run after updating:** the app copies the old local database into the new one once. The original file stays untouched, and a copy is saved next to it as `skirt_tee_studio.pre-cloud.db`.
 
 **Restoring on a new computer:** install the app, set up the owner PIN (staff PINs never leave the computer they were made on), then **Settings → Connect to cloud** with the owner login. Everything downloads, photos included.
+
+**Adding another owner:** the first owner to connect the shop computer creates the shop in the cloud. Any other owner needs two steps, once per person:
+
+1. In Supabase, **Authentication → Users → Add user → Create new user**. Enter their email and a password, and tick **Auto Confirm User**.
+2. Link that login to the shop: **SQL Editor → New query**, paste the following with their email in place of `new.owner@example.com`, then **Run**. It should return one row.
+
+   ```sql
+   insert into public.shop_members (shop_id, user_id, role)
+   select (select shop_id from public.shop_members where role = 'owner' limit 1), u.id, 'owner'
+   from auth.users u
+   where u.email = 'new.owner@example.com'
+     and not exists (select 1 from public.shop_members m where m.user_id = u.id)
+   returning shop_id, role;
+   ```
+
+Do step 2 **before** they sign in on the shop computer. A login with no shop link that connects the shop computer gets a new, empty shop of its own, and the computer starts syncing to that one. The owner mobile app is safe either way: it refuses a login with no shop link.
 
 ### Owner mobile app
 

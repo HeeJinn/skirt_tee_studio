@@ -243,7 +243,8 @@ $$;
 -- ---------------------------------------------------------------------------
 
 -- Returns the caller's shop, creating it (with the caller as owner) the first
--- time. A second owner is added by hand for now — see supabase/README.md.
+-- time. A second owner is added by hand for now — see "Adding another owner"
+-- in the root README.md.
 create function public.ensure_shop(shop_name text)
 returns uuid
 language plpgsql
