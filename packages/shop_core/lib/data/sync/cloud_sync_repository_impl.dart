@@ -154,7 +154,11 @@ class CloudSyncRepositoryImpl implements CloudSyncRepository {
         );
 
     if (status == null || status.connecting) return state(CloudStatus.syncing);
-    if (!status.connected) return state(CloudStatus.offline, status.downloadError);
+    if (!status.connected) {
+      // An HTTP error means the service answered, so the internet is fine.
+      final error = status.downloadError;
+      return state(error is SyncResponseException ? CloudStatus.refused : CloudStatus.offline, error);
+    }
     if (status.uploadError != null) return state(CloudStatus.paused, status.uploadError);
     if (status.uploading || status.downloading || _pending > 0) return state(CloudStatus.syncing);
     return state(CloudStatus.upToDate);

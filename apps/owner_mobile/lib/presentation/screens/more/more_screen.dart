@@ -47,7 +47,7 @@ class MoreScreen extends StatelessWidget {
     final colors = ShopColors.of(context);
     final syncColor = switch (state.status) {
       CloudStatus.upToDate => colors.success,
-      CloudStatus.offline || CloudStatus.paused => colors.warning,
+      CloudStatus.offline || CloudStatus.paused || CloudStatus.refused => colors.warning,
       _ => colors.secondaryInk,
     };
 
@@ -164,6 +164,8 @@ String syncLabel(CloudSyncState state, {DateTime? now}) {
       return 'Offline';
     case CloudStatus.paused:
       return 'Paused';
+    case CloudStatus.refused:
+      return 'Cloud refused';
     case CloudStatus.signedOut:
       return 'Signed out';
     case CloudStatus.notConfigured:

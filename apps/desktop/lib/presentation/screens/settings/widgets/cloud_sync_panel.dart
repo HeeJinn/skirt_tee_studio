@@ -99,7 +99,7 @@ class CloudSyncPanel extends StatelessWidget {
             ),
           ],
           if (state.isConnected) ...[
-            if (state.status == CloudStatus.paused && state.error != null) ...[
+            if (state.error != null && state.status != CloudStatus.upToDate) ...[
               const SizedBox(height: AppSpacing.md),
               SelectableText(state.error!, style: context.text.bodySmall?.copyWith(color: tokens.danger)),
             ],

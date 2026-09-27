@@ -66,7 +66,8 @@ class _Header extends StatelessWidget {
     final colors = ShopColors.of(context);
     final (color, icon) = switch (sync.status) {
       CloudStatus.upToDate => (colors.success, CupertinoIcons.checkmark_alt),
-      CloudStatus.offline || CloudStatus.paused => (colors.warning, CupertinoIcons.wifi_slash),
+      CloudStatus.offline => (colors.warning, CupertinoIcons.wifi_slash),
+      CloudStatus.paused || CloudStatus.refused => (colors.warning, CupertinoIcons.exclamationmark_triangle),
       _ => (colors.secondaryInk, CupertinoIcons.arrow_2_circlepath),
     };
     return Padding(
