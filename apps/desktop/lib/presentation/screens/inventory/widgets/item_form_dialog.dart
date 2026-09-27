@@ -1,7 +1,9 @@
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:shop_core/core/theme/app_theme.dart';
 import '../../../../core/constants/categories.dart';
 import '../../../../core/utils/money_input.dart';
 import 'package:shop_core/data/datasources/local/item_image_storage.dart';
@@ -13,12 +15,18 @@ const _imageTypeGroup = XTypeGroup(
   extensions: ['jpg', 'jpeg', 'png', 'webp'],
 );
 
+final _peso = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
+
 /// Add/Edit Item dialog. Pass an existing [item] to edit it in place;
 /// omit it to create a new one. Returns the resulting Item via Navigator.pop,
 /// or null if cancelled.
 ///
 /// An existing item's quantity is read-only here: stock only changes through
 /// Receive stock / Adjust stock, so every piece in or out is costed.
+///
+/// What a piece cost is normally set by Receive stock, so the form keeps it
+/// out of the way: a new item only asks for it when it already has pieces on
+/// hand, and an existing item shows it as text behind a Set/Change link.
 class ItemFormDialog extends StatefulWidget {
   const ItemFormDialog({super.key, this.item, this.forLot = false});
   final Item? item;
@@ -41,7 +49,16 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
   late bool _isBargain;
   late String? _imagePath;
 
+  /// Editing only: the owner tapped Set/Change cost.
+  bool _editingCost = false;
+
   bool get _isEditing => widget.item != null;
+
+  bool get _asksForCost {
+    if (widget.forLot) return false;
+    if (_isEditing) return _editingCost;
+    return (int.tryParse(_qtyController.text) ?? 0) > 0;
+  }
 
   @override
   void initState() {
@@ -98,10 +115,35 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
       qtyOnHand: widget.forLot ? 0 : int.parse(_qtyController.text),
       isBargain: _isBargain,
       imagePath: _imagePath,
-      unitCost: widget.forLot ? null : parseAmount(_costController.text),
+      unitCost: _asksForCost ? parseAmount(_costController.text) : widget.item?.unitCost,
     );
     if (!mounted) return;
     Navigator.of(context).pop(result);
+  }
+
+  /// An existing item's cost as plain text. Only pieces on hand can be
+  /// costed, so the link to set or fix it shows only while there are some.
+  Widget _costLine(BuildContext context, Item item) {
+    final cost = item.unitCost;
+    if (cost == null && item.qtyOnHand <= 0) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              cost == null ? 'No cost yet, so profit on these isn\'t counted.' : 'You paid ${_peso.format(cost)} each.',
+              style: context.text.bodySmall,
+            ),
+          ),
+          if (item.qtyOnHand > 0)
+            TextButton(
+              onPressed: () => setState(() => _editingCost = true),
+              child: Text(cost == null ? 'SET COST' : 'CHANGE'),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -157,40 +199,17 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
                   onChanged: (v) => setState(() => _category = v!),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _priceController,
-                        decoration: const InputDecoration(labelText: 'Price (₱)'),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        validator: (v) {
-                          final n = double.tryParse(v ?? '');
-                          if (n == null || n < 0) return 'Enter a valid price';
-                          return null;
-                        },
-                      ),
-                    ),
-                    if (!widget.forLot) ...[
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _costController,
-                          decoration: const InputDecoration(labelText: 'Cost each (₱)'),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) return null;
-                            final n = parseAmount(v);
-                            if (n == null || n < 0) return 'Enter a valid cost';
-                            return null;
-                          },
-                        ),
-                      ),
-                    ],
-                  ],
+                TextFormField(
+                  controller: _priceController,
+                  decoration: const InputDecoration(labelText: 'Sells for (₱)'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: (v) {
+                    final n = double.tryParse(v ?? '');
+                    if (n == null || n < 0) return 'Enter a valid price';
+                    return null;
+                  },
                 ),
                 if (!widget.forLot) ...[
                   const SizedBox(height: 12),
@@ -204,9 +223,29 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
                           : 'Buying new stock? Use Receive stock so its cost is counted.',
                     ),
                     keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
                     validator: (v) {
                       final n = int.tryParse(v ?? '');
                       if (n == null || n < 0) return 'Enter a valid qty';
+                      return null;
+                    },
+                  ),
+                ],
+                if (_isEditing && !_editingCost) _costLine(context, widget.item!),
+                if (_asksForCost) ...[
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _costController,
+                    autofocus: _isEditing,
+                    decoration: const InputDecoration(
+                      labelText: 'What you paid for each (₱)',
+                      helperText: 'Optional. Without it, profit on these isn\'t counted.',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return null;
+                      final n = parseAmount(v);
+                      if (n == null || n < 0) return 'Enter a valid amount';
                       return null;
                     },
                   ),

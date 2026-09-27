@@ -287,7 +287,7 @@ class _InventoryHeaderRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(flex: _flexItem, child: Text('ITEM', style: style)),
-          Expanded(flex: _flexPrice, child: Text('PRICE', style: style, textAlign: TextAlign.right)),
+          Expanded(flex: _flexPrice, child: Text('SELLS FOR', style: style, textAlign: TextAlign.right)),
           Expanded(flex: _flexStock, child: Text('IN STOCK', style: style, textAlign: TextAlign.right)),
           const SizedBox(width: AppSpacing.xl),
           Expanded(flex: _flexStatus, child: Text('STATUS', style: style)),
@@ -370,7 +370,7 @@ class _InventoryRow extends StatelessWidget {
                   Text(_peso.format(item.unitPrice), style: tabular),
                   if (onEdit != null)
                     Text(
-                      item.unitCost == null ? 'no cost' : 'cost ${_peso.format(item.unitCost)}',
+                      item.unitCost == null ? 'cost not set' : 'paid ${_peso.format(item.unitCost)}',
                       style: context.text.bodySmall?.copyWith(fontFeatures: kTabularFigures),
                     ),
                 ],
