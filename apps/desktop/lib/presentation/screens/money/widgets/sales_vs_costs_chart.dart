@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:shop_core/core/theme/app_theme.dart';
 import 'package:shop_core/calculations/report_calculations.dart';
 import 'package:shop_core/calculations/money_calculations.dart';
-import 'money_format.dart';
+import 'package:shop_core/core/format/money_format.dart';
 
 /// Sales against everything that came off profit, month by month — the gap
 /// between each pair is that month's profit. One axis (both are pesos), a

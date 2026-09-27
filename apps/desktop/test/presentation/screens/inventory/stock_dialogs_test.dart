@@ -36,6 +36,8 @@ Future<T? Function()> _open<T>(WidgetTester tester, Widget dialog) async {
 
 Finder _field(String label) => find.widgetWithText(TextFormField, label);
 
+const _costLabel = 'What you paid for each (₱)';
+
 /// The lot's per-line piece counts, in line order.
 final _qtyFields = find.byWidgetPredicate((w) => w is TextField && w.decoration?.hintText == '0');
 
@@ -152,37 +154,96 @@ void main() {
   });
 
   group('ItemFormDialog', () {
-    testWidgets('an existing item\'s stock is read-only, but its cost can be corrected', (tester) async {
+    testWidgets('a new item only asks what was paid once it has pieces on hand', (tester) async {
+      final result = await _open<Item>(tester, const ItemFormDialog());
+
+      expect(_field(_costLabel), findsNothing);
+      await tester.enterText(_field('Name'), 'Basic Tee');
+      await tester.enterText(_field('Sells for (₱)'), '150');
+      await tester.enterText(_field('Already in stock'), '6');
+      await tester.pumpAndSettle();
+      await tester.enterText(_field(_costLabel), '60');
+      await tester.tap(find.text('ADD'));
+      await tester.pumpAndSettle();
+
+      expect(result()!.qtyOnHand, 6);
+      expect(result()!.unitCost, 60);
+    });
+
+    testWidgets('a cost typed for pieces that were then cleared is dropped', (tester) async {
+      final result = await _open<Item>(tester, const ItemFormDialog());
+
+      await tester.enterText(_field('Name'), 'Basic Tee');
+      await tester.enterText(_field('Sells for (₱)'), '150');
+      await tester.enterText(_field('Already in stock'), '6');
+      await tester.pumpAndSettle();
+      await tester.enterText(_field(_costLabel), '60');
+      await tester.enterText(_field('Already in stock'), '0');
+      await tester.pumpAndSettle();
+      expect(_field(_costLabel), findsNothing);
+      await tester.tap(find.text('ADD'));
+      await tester.pumpAndSettle();
+
+      expect(result()!.unitCost, isNull);
+    });
+
+    testWidgets('an existing item shows its cost as text and keeps it unless changed', (tester) async {
       final result = await _open<Item>(tester, const ItemFormDialog(item: _tee));
 
       final stockField = tester.widget<TextFormField>(_field('In stock'));
       expect(stockField.enabled, isFalse);
-      await tester.enterText(_field('Cost each (₱)'), '90');
+      expect(_field(_costLabel), findsNothing);
+      expect(find.text('You paid ₱100.00 each.'), findsOneWidget);
+      await tester.enterText(_field('Sells for (₱)'), '160');
+      await tester.tap(find.text('SAVE'));
+      await tester.pumpAndSettle();
+
+      expect(result()!.unitPrice, 160);
+      expect(result()!.unitCost, 100);
+      expect(result()!.qtyOnHand, 4);
+    });
+
+    testWidgets('an existing item\'s cost can be corrected behind Change', (tester) async {
+      final result = await _open<Item>(tester, const ItemFormDialog(item: _tee));
+
+      await tester.tap(find.text('CHANGE'));
+      await tester.pumpAndSettle();
+      await tester.enterText(_field(_costLabel), '90');
       await tester.tap(find.text('SAVE'));
       await tester.pumpAndSettle();
 
       expect(result()!.unitCost, 90);
-      expect(result()!.qtyOnHand, 4);
     });
 
-    testWidgets('clearing the cost leaves it unknown', (tester) async {
-      final result = await _open<Item>(tester, const ItemFormDialog(item: _tee));
+    testWidgets('old stock with no cost offers to set one', (tester) async {
+      const oldStock = Item(id: 'old', name: 'Old Skirt', category: 'Skirt', unitPrice: 200, qtyOnHand: 3);
+      final result = await _open<Item>(tester, const ItemFormDialog(item: oldStock));
 
-      await tester.enterText(_field('Cost each (₱)'), '');
+      expect(find.text('No cost yet, so profit on these isn\'t counted.'), findsOneWidget);
+      await tester.tap(find.text('SET COST'));
+      await tester.pumpAndSettle();
+      await tester.enterText(_field(_costLabel), '80');
       await tester.tap(find.text('SAVE'));
       await tester.pumpAndSettle();
 
-      expect(result()!.unitCost, isNull);
+      expect(result()!.unitCost, 80);
+    });
+
+    testWidgets('an item with no pieces and no cost says nothing about cost', (tester) async {
+      await _open<Item>(tester, const ItemFormDialog(item: _skirt));
+
+      expect(find.text('SET COST'), findsNothing);
+      expect(find.textContaining('No cost yet'), findsNothing);
     });
 
     testWidgets('a new item for a lot asks for neither stock nor cost', (tester) async {
       final result = await _open<Item>(tester, const ItemFormDialog(forLot: true));
 
       expect(find.text('NEW ITEM IN THIS LOT'), findsOneWidget);
-      expect(_field('Cost each (₱)'), findsNothing);
+      expect(_field(_costLabel), findsNothing);
       expect(_field('Already in stock'), findsNothing);
       await tester.enterText(_field('Name'), 'Kids Tee');
-      await tester.enterText(_field('Price (₱)'), '100');
+      await tester.enterText(_field('Sells for (₱)'), '100');
       await tester.tap(find.text('ADD TO LOT'));
       await tester.pumpAndSettle();
 

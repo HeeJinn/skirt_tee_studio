@@ -22,6 +22,12 @@ class FakeStaffRepository implements StaffRepository {
   Future<void> delete(String id) async => _staff.removeWhere((s) => s.id == id);
 
   @override
+  Future<void> rename(String id, String name) async {
+    final i = _staff.indexWhere((s) => s.id == id);
+    if (i >= 0) _staff[i] = StaffMember(id: id, name: name, role: _staff[i].role);
+  }
+
+  @override
   Future<bool> verifyPin(String id, String pin) async => _pins[id] == pin;
 
   @override

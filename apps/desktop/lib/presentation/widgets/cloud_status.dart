@@ -40,6 +40,13 @@ class CloudStatusLook {
               : 'Selling works as normal; changes upload when the internet is back',
           color: tokens.warning,
         ),
+      CloudStatus.refused => CloudStatusLook(
+          icon: Icons.gpp_maybe_outlined,
+          label: 'Cloud refused',
+          detail: 'The internet is fine, but the cloud turned this computer away — its setup needs fixing. '
+              'Changes wait on this computer.',
+          color: tokens.danger,
+        ),
       CloudStatus.paused => CloudStatusLook(
           icon: Icons.sync_problem_outlined,
           label: 'Sync paused',

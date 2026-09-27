@@ -19,11 +19,11 @@ import 'package:skirt_tee_studio/presentation/viewmodels/money_view_model.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/sales_view_model.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/session_view_model.dart';
 
-import '../../../fakes/fake_item_repository.dart';
-import '../../../fakes/fake_money_repository.dart';
-import '../../../fakes/fake_sale_repository.dart';
+import 'package:shop_core/testing/fake_item_repository.dart';
+import 'package:shop_core/testing/fake_money_repository.dart';
+import 'package:shop_core/testing/fake_sale_repository.dart';
 import '../../../fakes/fake_staff_repository.dart';
-import '../../../fakes/fake_stock_repository.dart';
+import 'package:shop_core/testing/fake_stock_repository.dart';
 
 late SessionViewModel _session;
 

@@ -14,6 +14,11 @@ enum CloudStatus {
   /// Can't reach the cloud. Changes wait on this PC and go up later.
   offline,
 
+  /// The cloud answered but turned the connection away — a setup problem
+  /// (sign-in not accepted, sync rules missing), not the internet. Changes
+  /// wait on this PC until it's fixed.
+  refused,
+
   /// The cloud refused a change. Uploads wait until it's fixed; nothing is
   /// lost from this PC meanwhile.
   paused,
@@ -40,7 +45,8 @@ class CloudSyncState {
   /// Changes made on this PC that haven't reached the cloud yet.
   final int pendingChanges;
 
-  /// Technical detail behind [CloudStatus.paused] or [CloudStatus.offline].
+  /// Technical detail behind [CloudStatus.paused], [CloudStatus.refused] or
+  /// [CloudStatus.offline].
   final String? error;
 
   bool get isConnected => status != CloudStatus.notConfigured && status != CloudStatus.signedOut;

@@ -32,6 +32,12 @@ class MoneyRepositoryImpl implements MoneyRepository {
   }
 
   @override
+  Future<DateTime?> booksStartedAtIfSet() async {
+    final rows = await _db.query('shop_settings', where: 'id = ?', whereArgs: [DatabaseService.booksStartedAtKey]);
+    return rows.isEmpty ? null : DateTime.parse(rows.single['value'] as String);
+  }
+
+  @override
   Future<List<MoneyEntry>> getAll() async {
     final rows = await _db.query('money_entries', orderBy: 'at DESC');
     return rows.map(moneyEntryFromMap).toList();

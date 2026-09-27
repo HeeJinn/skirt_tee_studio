@@ -18,7 +18,7 @@ import '../../widgets/status_pill.dart';
 import 'package:shop_core/calculations/report_calculations.dart';
 import 'package:shop_core/calculations/money_calculations.dart';
 import 'widgets/money_entry_dialog.dart';
-import 'widgets/money_format.dart';
+import 'package:shop_core/core/format/money_format.dart';
 import 'widgets/profit_breakdown.dart';
 import 'widgets/sales_vs_costs_chart.dart';
 

@@ -68,6 +68,26 @@ class SessionViewModel extends ChangeNotifier {
     await load();
   }
 
+  /// Null if [name] is fine to use for [member]; otherwise why not. Names
+  /// must be unique, since money entries record owners by name.
+  String? checkName(StaffMember member, String name) {
+    if (name.trim().isEmpty) return 'Required';
+    final taken = _staff.any((s) => s.id != member.id && s.name.toLowerCase() == name.trim().toLowerCase());
+    return taken ? 'Someone already has that name' : null;
+  }
+
+  /// Owners rename themselves; the log keeps the old name on past entries.
+  Future<void> renameSelf(String name) async {
+    final me = _current;
+    if (me == null || !isOwner || checkName(me, name) != null) return;
+    name = name.trim();
+    if (name == me.name) return;
+    await _repository.rename(me.id, name);
+    _current = StaffMember(id: me.id, name: name, role: me.role);
+    await log('Renamed "${me.name}" to "$name"');
+    await load();
+  }
+
   Future<void> log(String action) async {
     final user = _current;
     if (user == null) return;

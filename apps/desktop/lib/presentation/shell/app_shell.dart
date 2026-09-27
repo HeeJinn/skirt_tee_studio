@@ -18,7 +18,7 @@ import '../screens/sales/sales_history_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/staff/staff_screen.dart';
 import '../viewmodels/cart_view_model.dart';
-import '../viewmodels/cloud_sync_view_model.dart';
+import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 import '../viewmodels/session_view_model.dart';
 import '../widgets/app_snackbar.dart';
 import '../widgets/cloud_status.dart';

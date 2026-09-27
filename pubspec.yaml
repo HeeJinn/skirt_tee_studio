@@ -8,4 +8,5 @@ environment:
 
 workspace:
   - apps/desktop
+  - apps/owner_mobile
   - packages/shop_core

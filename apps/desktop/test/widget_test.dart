@@ -14,7 +14,7 @@ import 'package:shop_core/domain/entities/item.dart';
 import 'package:shop_core/domain/entities/staff.dart';
 import 'package:skirt_tee_studio/presentation/shell/app_shell.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/cart_view_model.dart';
-import 'package:skirt_tee_studio/presentation/viewmodels/cloud_sync_view_model.dart';
+import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/inventory_view_model.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/money_view_model.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/reservation_view_model.dart';
@@ -22,14 +22,14 @@ import 'package:skirt_tee_studio/presentation/viewmodels/sales_view_model.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/session_view_model.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/settings_view_model.dart';
 
-import 'fakes/fake_cloud_sync_repository.dart';
-import 'fakes/fake_item_repository.dart';
-import 'fakes/fake_money_repository.dart';
-import 'fakes/fake_reservation_repository.dart';
-import 'fakes/fake_sale_repository.dart';
-import 'fakes/fake_settings_repository.dart';
+import 'package:shop_core/testing/fake_cloud_sync_repository.dart';
+import 'package:shop_core/testing/fake_item_repository.dart';
+import 'package:shop_core/testing/fake_money_repository.dart';
+import 'package:shop_core/testing/fake_reservation_repository.dart';
+import 'package:shop_core/testing/fake_sale_repository.dart';
+import 'package:shop_core/testing/fake_settings_repository.dart';
 import 'fakes/fake_staff_repository.dart';
-import 'fakes/fake_stock_repository.dart';
+import 'package:shop_core/testing/fake_stock_repository.dart';
 
 Widget _buildApp(SessionViewModel session, FakeCloudSyncRepository cloud) {
   final inventoryViewModel = InventoryViewModel(FakeItemRepository(), FakeStockRepository())

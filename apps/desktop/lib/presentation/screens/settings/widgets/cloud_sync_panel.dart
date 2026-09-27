@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:shop_core/core/theme/app_theme.dart';
 import 'package:shop_core/domain/entities/cloud_sync.dart';
-import '../../../viewmodels/cloud_sync_view_model.dart';
+import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 import '../../../widgets/app_snackbar.dart';
 import '../../../widgets/cloud_status.dart';
 
@@ -99,7 +99,7 @@ class CloudSyncPanel extends StatelessWidget {
             ),
           ],
           if (state.isConnected) ...[
-            if (state.status == CloudStatus.paused && state.error != null) ...[
+            if (state.error != null && state.status != CloudStatus.upToDate) ...[
               const SizedBox(height: AppSpacing.md),
               SelectableText(state.error!, style: context.text.bodySmall?.copyWith(color: tokens.danger)),
             ],

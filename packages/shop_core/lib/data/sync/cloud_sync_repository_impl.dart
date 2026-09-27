@@ -11,10 +11,25 @@ import 'item_photo_sync.dart';
 import 'supabase_connector.dart';
 
 class CloudSyncRepositoryImpl implements CloudSyncRepository {
-  CloudSyncRepositoryImpl(this._db, this._config);
+  CloudSyncRepositoryImpl(
+    this._db,
+    this._config, {
+    this.createShopIfMissing = true,
+    this.clearLocalDataOnSignOut = false,
+  });
 
   final PowerSyncDatabase _db;
   final CloudConfig _config;
+
+  /// The shop computer creates the shop on its first connect. The owner app
+  /// only joins one: an account without a shop is refused rather than given
+  /// a new, empty shop.
+  final bool createShopIfMissing;
+
+  /// The shop computer keeps its data when disconnected — it's the shop's
+  /// working copy. A phone can be lost, so signing out removes the shop's
+  /// data and photos from it.
+  final bool clearLocalDataOnSignOut;
 
   static const shopName = 'The Skirt & Tee Studio';
 
@@ -61,8 +76,18 @@ class CloudSyncRepositoryImpl implements CloudSyncRepository {
     if (client == null) throw const CloudSignInException('Cloud backup isn\'t set up in this version of the app.');
     try {
       await client.auth.signInWithPassword(email: email.trim(), password: password);
-      // First connect creates the shop in the cloud; later ones find it.
-      await client.rpc('ensure_shop', params: {'shop_name': shopName});
+      if (createShopIfMissing) {
+        // First connect creates the shop in the cloud; later ones find it.
+        await client.rpc('ensure_shop', params: {'shop_name': shopName});
+      } else {
+        final membership = await client.from('shop_members').select('shop_id').limit(1);
+        if (membership.isEmpty) {
+          await client.auth.signOut();
+          throw const CloudSignInException(
+            "This account isn't linked to the shop yet. Connect the shop computer with it first.",
+          );
+        }
+      }
     } on AuthRetryableFetchException {
       throw const CloudSignInException('Can\'t reach the cloud. Check the internet connection and try again.');
     } on AuthException catch (e) {
@@ -80,7 +105,12 @@ class CloudSyncRepositoryImpl implements CloudSyncRepository {
   @override
   Future<void> signOut() async {
     await _photos?.stop();
-    await _db.disconnect();
+    if (clearLocalDataOnSignOut) {
+      await _photos?.clear();
+      await _db.disconnectAndClear();
+    } else {
+      await _db.disconnect();
+    }
     await _client?.auth.signOut();
     _publish();
   }
@@ -124,7 +154,11 @@ class CloudSyncRepositoryImpl implements CloudSyncRepository {
         );
 
     if (status == null || status.connecting) return state(CloudStatus.syncing);
-    if (!status.connected) return state(CloudStatus.offline, status.downloadError);
+    if (!status.connected) {
+      // An HTTP error means the service answered, so the internet is fine.
+      final error = status.downloadError;
+      return state(error is SyncResponseException ? CloudStatus.refused : CloudStatus.offline, error);
+    }
     if (status.uploadError != null) return state(CloudStatus.paused, status.uploadError);
     if (status.uploading || status.downloading || _pending > 0) return state(CloudStatus.syncing);
     return state(CloudStatus.upToDate);

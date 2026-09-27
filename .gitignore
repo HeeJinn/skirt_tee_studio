@@ -52,3 +52,6 @@ cloud.json
 
 # Supabase CLI (installed per-project with npm)
 node_modules/
+
+# Local Claude Code MCP servers (names the Supabase project) — this repo is public
+.mcp.json

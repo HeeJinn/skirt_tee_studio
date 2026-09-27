@@ -5,7 +5,7 @@ import 'package:shop_core/domain/entities/appearance.dart';
 import 'package:shop_core/domain/repositories/settings_repository.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/settings_view_model.dart';
 
-import '../../fakes/fake_settings_repository.dart';
+import 'package:shop_core/testing/fake_settings_repository.dart';
 
 void main() {
   late FakeSettingsRepository repository;

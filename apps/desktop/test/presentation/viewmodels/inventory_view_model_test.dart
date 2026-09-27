@@ -4,8 +4,8 @@ import 'package:shop_core/domain/entities/stock.dart';
 import 'package:shop_core/domain/repositories/stock_repository.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/inventory_view_model.dart';
 
-import '../../fakes/fake_item_repository.dart';
-import '../../fakes/fake_stock_repository.dart';
+import 'package:shop_core/testing/fake_item_repository.dart';
+import 'package:shop_core/testing/fake_stock_repository.dart';
 
 void main() {
   late FakeItemRepository repository;

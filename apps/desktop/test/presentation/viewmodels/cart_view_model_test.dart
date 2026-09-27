@@ -3,7 +3,7 @@ import 'package:shop_core/domain/entities/item.dart';
 import 'package:shop_core/domain/entities/sale.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/cart_view_model.dart';
 
-import '../../fakes/fake_sale_repository.dart';
+import 'package:shop_core/testing/fake_sale_repository.dart';
 
 void main() {
   late FakeSaleRepository repository;

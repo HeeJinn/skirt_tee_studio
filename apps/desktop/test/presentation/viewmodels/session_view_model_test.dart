@@ -59,4 +59,21 @@ void main() {
     await session.removeStaff(second);
     expect(session.staff.any((s) => s.id == second.id), isFalse);
   });
+
+  test('owners rename themselves, but not to a name someone else has', () async {
+    final session = await signedInSession();
+    await session.addStaff('Carl', StaffRole.cashier, '2222');
+
+    await session.renameSelf('carl');
+    expect(session.current?.name, 'Olivia Owner');
+
+    await session.renameSelf('  Liv ');
+    expect(session.current?.name, 'Liv');
+    expect(session.staff.map((s) => s.name), contains('Liv'));
+    expect(session.activity.first.staffName, 'Liv');
+
+    final cashier = await signedInSession(role: StaffRole.cashier);
+    await cashier.renameSelf('Boss');
+    expect(cashier.current?.name, 'Carl Cashier');
+  });
 }

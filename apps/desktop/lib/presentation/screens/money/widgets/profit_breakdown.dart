@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:shop_core/core/theme/app_theme.dart';
 import 'package:shop_core/calculations/money_calculations.dart';
-import 'money_format.dart';
+import 'package:shop_core/core/format/money_format.dart';
 
 /// The period's profit laid out like an income statement, so the owners
 /// can see exactly how sales turn into what the shop kept.

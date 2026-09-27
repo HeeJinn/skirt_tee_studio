@@ -56,6 +56,17 @@ class StaffRepositoryImpl implements StaffRepository {
   Future<void> delete(String id) => _db.delete('staff', where: 'id = ?', whereArgs: [id]);
 
   @override
+  Future<void> rename(String id, String name) => _db.writeTransaction((tx) async {
+        final row = await tx.getOptional('SELECT name FROM staff WHERE id = ?', [id]);
+        if (row == null) return;
+        final oldName = row['name'] as String;
+        await tx.update('staff', {'name': name}, where: 'id = ?', whereArgs: [id]);
+        for (final table in const ['money_entries', 'stock_lots']) {
+          await tx.update(table, {'person': name}, where: 'person = ?', whereArgs: [oldName]);
+        }
+      });
+
+  @override
   Future<bool> verifyPin(String id, String pin) async {
     final rows = await _db.query('staff', columns: ['pinHash', 'salt'], where: 'id = ?', whereArgs: [id]);
     if (rows.isEmpty) return false;

@@ -3,8 +3,8 @@ import 'package:shop_core/domain/entities/money_entry.dart';
 import 'package:shop_core/domain/entities/stock.dart';
 import 'package:skirt_tee_studio/presentation/viewmodels/money_view_model.dart';
 
-import '../../fakes/fake_money_repository.dart';
-import '../../fakes/fake_stock_repository.dart';
+import 'package:shop_core/testing/fake_money_repository.dart';
+import 'package:shop_core/testing/fake_stock_repository.dart';
 
 void main() {
   late FakeStockRepository stock;

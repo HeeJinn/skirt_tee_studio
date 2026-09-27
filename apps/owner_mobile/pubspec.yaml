@@ -1,0 +1,46 @@
+name: owner_mobile
+description: "The Skirt & Tee Studio owner app for iPhone"
+publish_to: 'none'
+version: 1.0.0+1
+
+resolution: workspace
+
+environment:
+  sdk: ^3.13.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # Shared data, sync, and business rules (packages/shop_core)
+  shop_core:
+    path: ../../packages/shop_core
+
+  provider: ^6.1.0
+  intl: ^0.19.0
+  fl_chart: ^1.2.0
+  lottie: ^3.6.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  path: ^1.9.0
+
+flutter:
+  uses-material-design: false
+  assets:
+    - assets/animations/
+    - assets/fonts/Inter-OFL.txt
+  # San Francisco's stand-in on Android and Windows (see uiFontFamily).
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
