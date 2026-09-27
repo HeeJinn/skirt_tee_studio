@@ -34,6 +34,9 @@ class SettingsScreen extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
               children: [
                 if (isOwner) ...[
+                  const SectionLabel('Your name'),
+                  const Align(alignment: Alignment.centerLeft, child: _OwnerNamePanel()),
+                  const SizedBox(height: AppSpacing.md),
                   const SectionLabel('Cloud backup'),
                   const Align(alignment: Alignment.centerLeft, child: CloudSyncPanel()),
                   const SizedBox(height: AppSpacing.md),
@@ -62,6 +65,97 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The signed-in owner's name — what the sign-in screen, the activity log
+/// and the "who paid" choices in Money and Inventory show.
+class _OwnerNamePanel extends StatelessWidget {
+  const _OwnerNamePanel();
+
+  @override
+  Widget build(BuildContext context) {
+    final name = context.select<SessionViewModel, String>((s) => s.current?.name ?? '');
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 560),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.container),
+        border: Border.all(color: context.tokens.hairline),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.person_outline, size: 22, color: context.tokens.mutedText),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(child: Text(name, style: context.text.titleMedium, overflow: TextOverflow.ellipsis)),
+          TextButton(
+            onPressed: () => showDialog<void>(context: context, builder: (_) => const _RenameDialog()),
+            child: const Text('CHANGE'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RenameDialog extends StatefulWidget {
+  const _RenameDialog();
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final _name = TextEditingController(text: context.read<SessionViewModel>().current?.name);
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    await context.read<SessionViewModel>().renameSelf(_name.text);
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = context.read<SessionViewModel>();
+    return AlertDialog(
+      title: const Text('CHANGE YOUR NAME'),
+      content: SizedBox(
+        width: 360,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _name,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Name'),
+                validator: (v) => session.checkName(session.current!, v ?? ''),
+                onFieldSubmitted: (_) => _submit(),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Money and stock you\'ve recorded move to the new name. Past activity log lines keep the old one.',
+                style: context.text.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CANCEL')),
+        ElevatedButton(onPressed: _submit, child: const Text('SAVE')),
+      ],
     );
   }
 }
