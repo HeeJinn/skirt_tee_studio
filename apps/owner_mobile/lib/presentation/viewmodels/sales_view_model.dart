@@ -6,8 +6,8 @@ import 'package:shop_core/domain/repositories/sale_repository.dart';
 
 import '../../core/period.dart';
 
-/// The Sales tab: every sale on a chosen day or in a chosen month, grouped
-/// by day. Read-only.
+/// The Sales tab: every sale on a chosen day, in a chosen month, or ever,
+/// grouped by day. Read-only.
 class SalesViewModel extends ChangeNotifier {
   SalesViewModel(this._repository, {DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
 
@@ -15,7 +15,7 @@ class SalesViewModel extends ChangeNotifier {
   final DateTime Function() _clock;
 
   /// The kinds of period the tab offers.
-  static const kinds = [PeriodKind.day, PeriodKind.month];
+  static const kinds = [PeriodKind.day, PeriodKind.month, PeriodKind.all];
 
   List<Sale> _all = const [];
   bool _loaded = false;

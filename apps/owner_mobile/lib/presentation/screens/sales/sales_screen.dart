@@ -13,8 +13,8 @@ import '../../widgets/ui/period_bar.dart';
 import '../../widgets/ui/section.dart';
 import 'sale_detail_screen.dart';
 
-/// Every sale on a chosen day or in a chosen month, grouped by day with
-/// each day's total.
+/// Every sale on a chosen day, in a chosen month, or ever, grouped by day
+/// with each day's total.
 class SalesScreen extends StatelessWidget {
   const SalesScreen({super.key});
 
@@ -40,6 +40,7 @@ class SalesScreen extends StatelessWidget {
                     period: period,
                     now: vm.now,
                     kinds: SalesViewModel.kinds,
+                    allLabel: 'All Time',
                     earliest: vm.earliest,
                     onChanged: vm.selectPeriod,
                   ),
@@ -102,7 +103,7 @@ class SalesScreen extends StatelessWidget {
                 final day = days[i];
                 // A single day needs no heading: the date and its total are
                 // already just above.
-                final byDay = period.kind == PeriodKind.month;
+                final byDay = period.kind != PeriodKind.day;
                 return GroupedSection(
                   title: byDay ? dayLabel(day.day, vm.now) : null,
                   trailing: byDay ? pesoWhole.format(day.total) : null,
