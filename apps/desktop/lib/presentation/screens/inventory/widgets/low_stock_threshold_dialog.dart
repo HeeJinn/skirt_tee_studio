@@ -35,7 +35,7 @@ class _LowStockThresholdDialogState extends State<LowStockThresholdDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('LOW STOCK THRESHOLD'),
+      title: const Text('Low Stock Threshold'),
       content: SizedBox(
         width: 320,
         child: Form(
@@ -59,9 +59,9 @@ class _LowStockThresholdDialogState extends State<LowStockThresholdDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('CANCEL'),
+          child: const Text('Cancel'),
         ),
-        ElevatedButton(onPressed: _submit, child: const Text('SAVE')),
+        ElevatedButton(onPressed: _submit, child: const Text('Save')),
       ],
     );
   }

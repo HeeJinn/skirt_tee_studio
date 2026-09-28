@@ -85,7 +85,7 @@ void main() {
     await tester.tap(find.text('Inventory'));
     await tester.pumpAndSettle();
     expect(find.text('Basic Tee'), findsOneWidget);
-    expect(find.text('ADD ITEM'), findsNothing);
+    expect(find.text('Add Item'), findsNothing);
     expect(find.byTooltip('Delete'), findsNothing);
   });
 
@@ -111,7 +111,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('CLOUD BACKUP'), findsNothing, reason: 'cloud backup is for owners');
+    expect(find.text('Cloud backup'), findsNothing, reason: 'cloud backup is for owners');
     for (final preset in ThemePresets.all) {
       expect(find.text(preset.name), findsOneWidget, reason: preset.name);
     }
@@ -136,19 +136,19 @@ void main() {
 
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
-    expect(find.text('CLOUD BACKUP'), findsOneWidget);
+    expect(find.text('Cloud backup'), findsOneWidget);
     expect(find.text('Not connected'), findsOneWidget);
 
-    await tester.tap(find.text('CONNECT TO CLOUD'));
+    await tester.tap(find.text('Connect to Cloud'));
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'owner@example.com');
     await tester.enterText(find.widgetWithText(TextFormField, 'Password'), 'wrong');
-    await tester.tap(find.text('CONNECT'));
+    await tester.tap(find.text('Connect'));
     await tester.pumpAndSettle();
     expect(find.text("That email and password don't match."), findsOneWidget, reason: 'stays open to retry');
 
     await tester.enterText(find.widgetWithText(TextFormField, 'Password'), FakeCloudSyncRepository.goodPassword);
-    await tester.tap(find.text('CONNECT'));
+    await tester.tap(find.text('Connect'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -181,13 +181,19 @@ void main() {
     expect(find.text('Back up data'), findsOneWidget);
   });
 
-  test('every preset builds a light and dark theme from its own palette', () {
+  test('every preset builds a light and dark theme: system surfaces, its own accent and charts', () {
     for (final preset in ThemePresets.all) {
       for (final palette in [preset.light, preset.dark]) {
         final theme = AppTheme.fromPalette(palette);
+        final system = SystemColors.of(palette.brightness);
+        final tokens = theme.extension<AppTokens>()!;
         expect(theme.brightness, palette.brightness);
         expect(theme.colorScheme.primary, palette.brand);
-        expect(theme.extension<AppTokens>(), palette.tokens);
+        expect(theme.scaffoldBackgroundColor, system.page);
+        expect(theme.colorScheme.surface, system.surface);
+        expect(tokens.mutedText, system.secondaryLabel);
+        expect(tokens.chartSales, palette.tokens.chartSales);
+        expect(tokens.accent, palette.tokens.accent);
       }
     }
   });
@@ -219,7 +225,7 @@ void main() {
     await tester.tap(find.text('Inventory'));
     await tester.pumpAndSettle();
 
-    expect(find.text('ADD ITEM'), findsOneWidget);
+    expect(find.text('Add Item'), findsOneWidget);
   });
 
   testWidgets('Money screen opens on an empty book with no exceptions', (tester) async {
@@ -240,11 +246,11 @@ void main() {
 
     await tester.tap(find.text('Inventory'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('ADD ITEM'));
+    await tester.tap(find.text('Add Item'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('ADD PHOTO'), findsOneWidget);
-    expect(find.text('REMOVE'), findsNothing);
+    expect(find.text('Add Photo'), findsOneWidget);
+    expect(find.text('Remove'), findsNothing);
   });
 }

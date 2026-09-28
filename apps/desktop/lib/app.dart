@@ -39,6 +39,7 @@ class SkirtAndTeeApp extends StatelessWidget {
           themeAnimationDuration: const Duration(milliseconds: 280),
           themeAnimationCurve: Curves.easeOutCubic,
           debugShowCheckedModeBanner: false,
+          scrollBehavior: const _IosScrollBehavior(),
           builder: (_, child) => WindowFrame(child: child!),
           home: Selector<SessionViewModel, bool>(
             selector: (_, session) => session.current != null,
@@ -48,4 +49,13 @@ class SkirtAndTeeApp extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Lists and pages bounce at their ends, as they do on iPhone and iPad.
+class _IosScrollBehavior extends MaterialScrollBehavior {
+  const _IosScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const BouncingScrollPhysics(parent: RangeMaintainingScrollPhysics());
 }

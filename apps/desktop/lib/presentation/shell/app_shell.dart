@@ -1,13 +1,18 @@
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/routing/app_routes.dart';
+
 import 'package:shop_core/core/theme/app_theme.dart';
+
 import '../../core/utils/date_stamp.dart';
+
 import 'package:shop_core/data/datasources/local/database_service.dart';
 import 'package:shop_core/domain/entities/cloud_sync.dart';
 import 'package:shop_core/domain/entities/staff.dart';
+
 import '../screens/customers/customers_screen.dart';
 import '../screens/inventory/inventory_screen.dart';
 import '../screens/money/money_screen.dart';
@@ -18,10 +23,13 @@ import '../screens/sales/sales_history_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/staff/staff_screen.dart';
 import '../viewmodels/cart_view_model.dart';
+
 import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
+
 import '../viewmodels/session_view_model.dart';
 import '../widgets/app_snackbar.dart';
 import '../widgets/cloud_status.dart';
+import '../widgets/glass.dart';
 import '../widgets/monogram.dart';
 
 /// Desktop shell: persistent grouped sidebar + main content area.
@@ -88,19 +96,23 @@ class _AppShellState extends State<AppShell> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _Sidebar(
-            destinations: destinations,
-            selectedIndex: _settingsOpen ? null : selected,
-            onSelect: (i) => setState(() {
-              _selectedIndex = i;
-              _settingsOpen = false;
-            }),
-            settingsOpen: _settingsOpen,
-            onOpenSettings: () => setState(() => _settingsOpen = true),
-            user: session.current!,
-            onBackup: session.isOwner ? _backupData : null,
-            cloudState: session.isOwner && cloud.isConnected ? cloud : null,
-            onLock: _lock,
+          Padding(
+            // Floats clear of the window edges, as iPadOS 26 insets it.
+            padding: const EdgeInsets.fromLTRB(AppSpacing.sm, AppSpacing.sm, 0, AppSpacing.sm),
+            child: _Sidebar(
+              destinations: destinations,
+              selectedIndex: _settingsOpen ? null : selected,
+              onSelect: (i) => setState(() {
+                _selectedIndex = i;
+                _settingsOpen = false;
+              }),
+              settingsOpen: _settingsOpen,
+              onOpenSettings: () => setState(() => _settingsOpen = true),
+              user: session.current!,
+              onBackup: session.isOwner ? _backupData : null,
+              cloudState: session.isOwner && cloud.isConnected ? cloud : null,
+              onLock: _lock,
+            ),
           ),
           Expanded(
             child: AnimatedSwitcher(
@@ -120,6 +132,10 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
+/// The sidebar, as iPadOS 26 floats it: a glass pane inset from the
+/// window's edges, the shop's mark at the top, destinations grouped under
+/// sentence-case headings with their symbols in the accent, and the
+/// account at the foot.
 class _Sidebar extends StatelessWidget {
   const _Sidebar({
     required this.destinations,
@@ -134,6 +150,7 @@ class _Sidebar extends StatelessWidget {
   });
 
   final List<AppRouteDestination> destinations;
+
   /// Null while the footer's Settings page is showing.
   final int? selectedIndex;
   final ValueChanged<int> onSelect;
@@ -146,10 +163,12 @@ class _Sidebar extends StatelessWidget {
   final CloudSyncState? cloudState;
   final VoidCallback onLock;
 
+  // With its 8pt inset, the same 224 the shop's screens were laid out beside.
+  static const width = 216.0;
+
   @override
   Widget build(BuildContext context) {
     final ink = context.colors.onSurface;
-    final mist = context.colors.primaryContainer;
 
     final items = <Widget>[];
     String? currentSection;
@@ -157,151 +176,185 @@ class _Sidebar extends StatelessWidget {
       final destination = destinations[i];
       if (destination.section != currentSection) {
         currentSection = destination.section;
-        items.add(Padding(
-          padding: EdgeInsets.fromLTRB(12, items.isEmpty ? 0 : AppSpacing.lg, 12, 6),
-          child: Text(destination.section.toUpperCase(), style: context.text.labelSmall),
-        ));
+        items.add(
+          Padding(
+            padding: EdgeInsets.fromLTRB(12, items.isEmpty ? 0 : AppSpacing.lg, 12, 6),
+            child: Semantics(
+              header: true,
+              child: Text(
+                destination.section,
+                style: context.text.labelMedium?.copyWith(color: context.tokens.mutedText),
+              ),
+            ),
+          ),
+        );
       }
-      items.add(_NavItem(
-        icon: i == selectedIndex ? destination.selectedIcon : destination.icon,
-        label: destination.label,
-        selected: i == selectedIndex,
-        onTap: () => onSelect(i),
-      ));
+      items.add(
+        _NavItem(
+          icon: i == selectedIndex ? destination.selectedIcon : destination.icon,
+          label: destination.label,
+          selected: i == selectedIndex,
+          onTap: () => onSelect(i),
+        ),
+      );
     }
 
-    return Container(
-      width: 224,
-      color: mist,
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, 36, AppSpacing.md, AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 12, bottom: 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'THE SKIRT & TEE',
-                  style: TextStyle(
-                    fontFamily: kSansFont,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 2.4,
-                    fontSize: 13,
-                    color: ink,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'STUDIO',
-                  style: TextStyle(
-                    fontFamily: kSansFont,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 5,
-                    fontSize: 10.5,
-                    color: context.tokens.mutedText,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // The nav scrolls rather than overflowing when the window is short
-          // (the runner allows windows down to 680 tall); the footer below
-          // always stays in view.
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: items),
-            ),
-          ),
-          if (cloudState != null) _CloudStatusItem(state: cloudState!, onTap: onOpenSettings),
-          _NavItem(
-            icon: settingsOpen ? Icons.tune : Icons.tune_outlined,
-            label: 'Settings',
-            selected: settingsOpen,
-            onTap: onOpenSettings,
-            muted: true,
-          ),
-          if (onBackup != null)
-            _NavItem(icon: Icons.backup_outlined, label: 'Back up data', selected: false, onTap: onBackup!, muted: true),
-          const Divider(height: AppSpacing.lg),
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: Row(
-              children: [
-                Monogram(name: user.name, radius: 15, onSage: true),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user.name,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+    return SizedBox(
+      width: width,
+      child: LiquidGlass(
+        shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(AppRadius.sheet)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.md, 36, AppSpacing.md, AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // The shop's logotype, set as its sign is.
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'THE SKIRT & TEE',
+                      style: TextStyle(
+                        fontFamily: kSansFont,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 2.2,
+                        fontSize: 13,
+                        color: ink,
                       ),
-                      Text(user.role == StaffRole.owner ? 'Owner' : 'Cashier', style: context.text.bodySmall),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'STUDIO',
+                      style: TextStyle(
+                        fontFamily: kSansFont,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 5,
+                        fontSize: 10.5,
+                        color: context.tokens.mutedText,
+                      ),
+                    ),
+                  ],
                 ),
-                IconButton(icon: const Icon(Icons.lock_outline, size: 18), tooltip: 'Lock', onPressed: onLock),
-              ],
-            ),
+              ),
+              // The nav scrolls rather than overflowing when the window is
+              // short (the runner allows windows down to 680 tall); the
+              // footer below always stays in view.
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: items),
+                ),
+              ),
+              if (cloudState != null) _CloudStatusItem(state: cloudState!, onTap: onOpenSettings),
+              _NavItem(
+                icon: settingsOpen ? CupertinoIcons.gear_solid : CupertinoIcons.gear,
+                label: 'Settings',
+                selected: settingsOpen,
+                onTap: onOpenSettings,
+              ),
+              if (onBackup != null)
+                _NavItem(
+                  icon: CupertinoIcons.tray_arrow_down,
+                  label: 'Back up data',
+                  selected: false,
+                  onTap: onBackup!,
+                ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: AppSpacing.sm),
+                child: Divider(),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Row(
+                  children: [
+                    Monogram(name: user.name, radius: 16),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.name,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          Text(user.role == StaffRole.owner ? 'Owner' : 'Cashier', style: context.text.bodySmall),
+                        ],
+                      ),
+                    ),
+                    IconButton(icon: const Icon(CupertinoIcons.lock, size: 19), tooltip: 'Lock', onPressed: onLock),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.muted = false,
-  });
+/// One sidebar row: the symbol in the accent, the name beside it, and the
+/// chosen row filled with a soft wash of the accent, as iPadOS marks it.
+class _NavItem extends StatefulWidget {
+  const _NavItem({required this.icon, required this.label, required this.selected, required this.onTap});
 
   final IconData icon;
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  final bool muted;
+
+  @override
+  State<_NavItem> createState() => _NavItemState();
+}
+
+class _NavItemState extends State<_NavItem> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final ink = context.colors.onSurface;
     final brand = context.colors.primary;
-    final color = selected || !muted ? ink : context.tokens.mutedText;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    // A near-black accent (Studio Sage) would vanish in dark mode.
+    final accent = dark && brand.computeLuminance() < 0.2 ? ink : brand;
+    final background = widget.selected
+        ? accent.withValues(alpha: dark ? 0.22 : 0.12)
+        : _hovered
+        ? context.tokens.sunken
+        : Colors.transparent;
 
     return Semantics(
       button: true,
-      selected: selected,
+      selected: widget.selected,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 2),
-        child: Material(
-          color: selected ? brand.withValues(alpha: 0.12) : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(AppRadius.control),
-            hoverColor: ink.withValues(alpha: 0.05),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: ShapeDecoration(
+                color: background,
+                shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(AppRadius.control)),
+              ),
               child: Row(
                 children: [
-                  Icon(icon, size: 20, color: selected ? brand : context.tokens.mutedText),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 24, child: Icon(widget.icon, size: 20, color: accent)),
+                  const SizedBox(width: 10),
                   Flexible(
                     child: Text(
-                      label,
+                      widget.label,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: kSansFont,
-                        fontSize: 14,
-                        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                        color: color,
+                      style: context.text.bodyMedium?.copyWith(
+                        fontWeight: widget.selected ? FontWeight.w600 : FontWeight.w400,
+                        color: ink,
                       ),
                     ),
                   ),
@@ -337,14 +390,13 @@ class _CloudStatusItem extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 2),
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(AppRadius.control),
-            hoverColor: context.colors.onSurface.withValues(alpha: 0.05),
+            customBorder: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(AppRadius.control)),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
-                  Icon(look.icon, size: 18, color: look.color),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 24, child: Icon(look.icon, size: 18, color: look.color)),
+                  const SizedBox(width: 10),
                   Flexible(
                     child: Text(
                       look.label,

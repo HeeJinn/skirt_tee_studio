@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +17,7 @@ import '../../viewmodels/inventory_view_model.dart';
 import '../../viewmodels/session_view_model.dart';
 import '../../viewmodels/settings_view_model.dart';
 import '../../widgets/app_snackbar.dart';
+import '../../widgets/ios_alert.dart';
 import '../../widgets/filter_bar.dart';
 import '../../widgets/item_thumbnail.dart';
 import '../../widgets/list_surface.dart';
@@ -148,15 +150,15 @@ class _InventoryScreenState extends State<InventoryScreen> {
         : '';
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('DELETE ITEM'),
+      builder: (dialogContext) => IosAlert(
+        title: const Text('Delete Item'),
         content: Text('Remove "${item.name}" from inventory? Past sales keep their record of it.$loss'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: dialogContext.tokens.danger),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('DELETE'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -258,23 +260,23 @@ class _InventoryScreenState extends State<InventoryScreen> {
               if (canEdit) ...[
                 TextButton.icon(
                   onPressed: _openThresholdDialog,
-                  icon: const Icon(Icons.tune, size: 18),
+                  icon: const Icon(CupertinoIcons.slider_horizontal_3, size: 18),
                   label: Text('Low stock ≤ $threshold'),
                 ),
                 IconButton(
                   onPressed: _exportCsv,
-                  icon: const Icon(Icons.file_download_outlined, size: 20),
+                  icon: const Icon(CupertinoIcons.square_arrow_down, size: 20),
                   tooltip: 'Export CSV',
                 ),
                 OutlinedButton.icon(
                   onPressed: _openAddDialog,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('ADD ITEM'),
+                  icon: const Icon(CupertinoIcons.add, size: 18),
+                  label: const Text('Add Item'),
                 ),
                 ElevatedButton.icon(
                   onPressed: _openReceiveDialog,
-                  icon: const Icon(Icons.move_to_inbox_outlined, size: 18),
-                  label: const Text('RECEIVE STOCK'),
+                  icon: const Icon(CupertinoIcons.tray_arrow_down, size: 18),
+                  label: const Text('Receive Stock'),
                 ),
               ],
             ],
@@ -295,7 +297,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 const SizedBox(width: AppSpacing.sm),
                 IconButton(
                   onPressed: _openCategoriesDialog,
-                  icon: const Icon(Icons.edit_note, size: 22),
+                  icon: const Icon(CupertinoIcons.square_pencil, size: 22),
                   tooltip: 'Add or remove categories',
                 ),
               ],
@@ -304,7 +306,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           const SizedBox(height: 20),
           Expanded(
             child: items.isEmpty
-                ? const EmptyState(icon: Icons.inventory_2_outlined, message: 'No items found')
+                ? const EmptyState(icon: CupertinoIcons.cube_box, message: 'No items found')
                 : SingleChildScrollView(
                     padding: const EdgeInsets.only(bottom: 24),
                     child: ListSurface(
@@ -346,11 +348,11 @@ class _InventoryHeaderRow extends StatelessWidget {
       padding: _rowPadding.add(const EdgeInsets.symmetric(vertical: 10)),
       child: Row(
         children: [
-          Expanded(flex: _flexItem, child: Text('ITEM', style: style)),
-          Expanded(flex: _flexPrice, child: Text('SELLS FOR', style: style, textAlign: TextAlign.right)),
-          Expanded(flex: _flexStock, child: Text('IN STOCK', style: style, textAlign: TextAlign.right)),
+          Expanded(flex: _flexItem, child: Text('Item', style: style)),
+          Expanded(flex: _flexPrice, child: Text('Sells for', style: style, textAlign: TextAlign.right)),
+          Expanded(flex: _flexStock, child: Text('In stock', style: style, textAlign: TextAlign.right)),
           const SizedBox(width: AppSpacing.xl),
-          Expanded(flex: _flexStatus, child: Text('STATUS', style: style)),
+          Expanded(flex: _flexStatus, child: Text('Status', style: style)),
           const SizedBox(width: _actionsWidth),
         ],
       ),
@@ -379,9 +381,9 @@ class _InventoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tabular = context.text.bodyMedium?.copyWith(fontFeatures: kTabularFigures);
     final Widget status = item.qtyOnHand <= 0
-        ? const StatusPill(label: 'OUT OF STOCK', tone: PillTone.danger)
+        ? const StatusPill(label: 'Out of stock', tone: PillTone.danger)
         : item.isLowStock(threshold)
-            ? const StatusPill(label: 'LOW STOCK', tone: PillTone.warning)
+            ? const StatusPill(label: 'Low stock', tone: PillTone.warning)
             : const SizedBox.shrink();
 
     return InkWell(
@@ -449,14 +451,14 @@ class _InventoryRow extends StatelessWidget {
                 children: [
                   if (onAdjust != null)
                     IconButton(
-                      icon: const Icon(Icons.swap_vert, size: 18),
+                      icon: const Icon(CupertinoIcons.arrow_up_arrow_down, size: 18),
                       tooltip: 'Adjust stock',
                       onPressed: onAdjust,
                     ),
                   if (onEdit != null)
-                    IconButton(icon: const Icon(Icons.edit_outlined, size: 18), tooltip: 'Edit', onPressed: onEdit),
+                    IconButton(icon: const Icon(CupertinoIcons.pencil, size: 18), tooltip: 'Edit', onPressed: onEdit),
                   if (onDelete != null)
-                    IconButton(icon: const Icon(Icons.delete_outline, size: 18), tooltip: 'Delete', onPressed: onDelete),
+                    IconButton(icon: const Icon(CupertinoIcons.trash, size: 18), tooltip: 'Delete', onPressed: onDelete),
                 ],
               ),
             ),

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/categories.dart';
@@ -64,7 +65,7 @@ class _CategoryFieldState extends State<CategoryField> {
           value: _newCategory,
           child: Row(
             children: [
-              Icon(Icons.add, size: 18, color: Theme.of(context).colorScheme.primary),
+              Icon(CupertinoIcons.add, size: 18, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
@@ -112,7 +113,7 @@ class _NewCategoryDialogState extends State<NewCategoryDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('NEW CATEGORY'),
+      title: const Text('New Category'),
       content: SizedBox(
         width: 320,
         child: Form(
@@ -128,8 +129,8 @@ class _NewCategoryDialogState extends State<NewCategoryDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CANCEL')),
-        ElevatedButton(onPressed: _submit, child: const Text('ADD')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        ElevatedButton(onPressed: _submit, child: const Text('Add')),
       ],
     );
   }

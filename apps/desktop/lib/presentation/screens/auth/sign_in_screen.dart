@@ -23,22 +23,27 @@ class SignInScreen extends StatelessWidget {
     final session = context.watch<SessionViewModel>();
 
     return Scaffold(
-      backgroundColor: context.colors.primaryContainer,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Container(
             width: 420,
             padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               color: context.colors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.container),
+              shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(AppRadius.sheet)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('THE SKIRT & TEE', style: context.text.headlineSmall, textAlign: TextAlign.center),
-                Text('STUDIO', style: context.text.labelSmall?.copyWith(letterSpacing: 5), textAlign: TextAlign.center),
+                // The shop's logotype, set as its sign is.
+                Text(
+                  'THE SKIRT & TEE',
+                  textAlign: TextAlign.center,
+                  style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w700, letterSpacing: 3),
+                ),
+                const SizedBox(height: 2),
+                Text('STUDIO', style: context.text.labelSmall?.copyWith(letterSpacing: 6), textAlign: TextAlign.center),
                 const SizedBox(height: 28),
                 if (session.staff.isEmpty) const _OwnerSetupForm() else _PickAndSignIn(staff: session.staff),
               ],
@@ -113,7 +118,7 @@ class _OwnerSetupFormState extends State<_OwnerSetupForm> {
             onFieldSubmitted: (_) => _submit(),
           ),
           const SizedBox(height: 20),
-          SizedBox(height: 48, child: ElevatedButton(onPressed: _submit, child: const Text('CREATE OWNER ACCOUNT'))),
+          SizedBox(height: 48, child: ElevatedButton(onPressed: _submit, child: const Text('Create Owner Account'))),
         ],
       ),
     );
@@ -208,7 +213,7 @@ class _PickAndSignInState extends State<_PickAndSignIn> {
               onPressed: _busy ? null : _signIn,
               child: _busy
                   ? SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2, color: tokens.mutedText))
-                  : const Text('SIGN IN'),
+                  : const Text('Sign In'),
             ),
           ),
         ],

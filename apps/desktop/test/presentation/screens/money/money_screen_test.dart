@@ -123,10 +123,10 @@ void main() {
   testWidgets('recording an expense adds it to the log and the activity trail', (tester) async {
     await _pump(tester);
 
-    await tester.tap(find.text('RECORD EXPENSE'));
+    await tester.tap(find.text('Record Expense'));
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextFormField, 'Amount (₱)'), '250');
-    await tester.tap(find.text('SAVE'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     expect(find.text('₱250.00'), findsOneWidget);
@@ -138,8 +138,8 @@ void main() {
 
     await tester.tap(find.byTooltip('Delete').first);
     await tester.pumpAndSettle();
-    expect(find.text('DELETE ENTRY'), findsOneWidget);
-    await tester.tap(find.widgetWithText(ElevatedButton, 'DELETE'));
+    expect(find.text('Delete Entry'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Delete'));
     await tester.pumpAndSettle();
 
     expect(find.byTooltip('Delete'), findsOneWidget, reason: 'one of two entries left; lots aren\'t deletable here');
@@ -150,10 +150,10 @@ void main() {
     await _pump(tester);
     await _session.addStaff('Ben', StaffRole.owner, '9999');
 
-    await tester.tap(find.text('TAKE HOME'));
+    await tester.tap(find.text('Take Home'));
     await tester.pumpAndSettle();
 
-    expect(find.text('TAKEN BY'), findsOneWidget);
+    expect(find.text('Taken by'), findsOneWidget);
     expect(find.text('Ben'), findsOneWidget);
     expect(find.text('Olivia Owner'), findsOneWidget);
   });

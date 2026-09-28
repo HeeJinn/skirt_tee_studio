@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +7,7 @@ import 'package:shop_core/core/theme/app_theme.dart';
 import 'package:shop_core/domain/entities/staff.dart';
 import '../../viewmodels/session_view_model.dart';
 import '../../widgets/list_surface.dart';
+import '../../widgets/ios_alert.dart';
 import '../../widgets/monogram.dart';
 import '../../widgets/screen_header.dart';
 import '../../widgets/status_pill.dart';
@@ -20,15 +22,15 @@ class StaffScreen extends StatelessWidget {
   Future<void> _confirmRemove(BuildContext context, StaffMember member) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('REMOVE STAFF'),
+      builder: (dialogContext) => IosAlert(
+        title: const Text('Remove Staff'),
         content: Text('${member.name} will no longer be able to sign in. Their past activity stays in the log.'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: dialogContext.tokens.danger),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('REMOVE'),
+            child: const Text('Remove'),
           ),
         ],
       ),
@@ -53,8 +55,8 @@ class StaffScreen extends StatelessWidget {
             actions: [
               ElevatedButton.icon(
                 onPressed: () => showDialog<void>(context: context, builder: (_) => const _AddStaffDialog()),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('ADD STAFF'),
+                icon: const Icon(CupertinoIcons.add, size: 18),
+                label: const Text('Add Staff'),
               ),
             ],
           ),
@@ -79,12 +81,12 @@ class StaffScreen extends StatelessWidget {
                               ),
                             ),
                             StatusPill(
-                              label: member.role == StaffRole.owner ? 'OWNER' : 'CASHIER',
+                              label: member.role == StaffRole.owner ? 'Owner' : 'Cashier',
                               tone: member.role == StaffRole.owner ? PillTone.accent : PillTone.neutral,
                             ),
                             const SizedBox(width: AppSpacing.sm),
                             IconButton(
-                              icon: const Icon(Icons.person_remove_outlined, size: 18),
+                              icon: const Icon(CupertinoIcons.person_badge_minus, size: 18),
                               tooltip: session.canRemove(member) ? 'Remove' : 'Can\'t remove yourself or the last owner',
                               onPressed: session.canRemove(member) ? () => _confirmRemove(context, member) : null,
                             ),
@@ -95,7 +97,7 @@ class StaffScreen extends StatelessWidget {
                 ),
                 SectionLabel('Activity', trailing: 'Latest ${session.activity.length}'),
                 if (session.activity.isEmpty)
-                  const SizedBox(height: 160, child: EmptyState(icon: Icons.history, message: 'No activity yet'))
+                  const SizedBox(height: 160, child: EmptyState(icon: CupertinoIcons.clock, message: 'No activity yet'))
                 else
                   ListSurface(
                     children: [
@@ -163,7 +165,7 @@ class _AddStaffDialogState extends State<_AddStaffDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('ADD STAFF'),
+      title: const Text('Add Staff'),
       content: SizedBox(
         width: 360,
         child: Form(
@@ -218,8 +220,8 @@ class _AddStaffDialogState extends State<_AddStaffDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CANCEL')),
-        ElevatedButton(onPressed: _submit, child: const Text('ADD')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        ElevatedButton(onPressed: _submit, child: const Text('Add')),
       ],
     );
   }

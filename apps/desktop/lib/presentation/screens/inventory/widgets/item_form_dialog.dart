@@ -197,7 +197,7 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
           if (item.qtyOnHand > 0)
             TextButton(
               onPressed: () => setState(() => _editingCost = true),
-              child: Text(cost == null ? 'SET COST' : 'CHANGE'),
+              child: Text(cost == null ? 'Set Cost' : 'Change'),
             ),
         ],
       ),
@@ -210,7 +210,7 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
     final String? outcome;
     if (preview == null || _validateSale(_saleController.text) != null) {
       outcome = widget.item?.onSale == true && widget.item!.salePercent == null && widget.item!.salePrice == null
-          ? 'Tagged SALE with no discount yet — set one, or turn On sale off.'
+          ? 'Tagged Sale with no discount yet — set one, or turn On sale off.'
           : null;
     } else {
       outcome = 'Sells for ${_peso.format(preview.sellingPrice)} instead of ${_peso.format(preview.unitPrice)}'
@@ -220,7 +220,7 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ChoiceStrip<_SaleBy>(
+        SegmentedStrip<_SaleBy>(
           options: const [(_SaleBy.percent, '% off'), (_SaleBy.price, 'Sale price')],
           selected: _saleBy,
           onSelected: (v) => setState(() {
@@ -252,7 +252,7 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_isEditing ? 'EDIT ITEM' : widget.forLot ? 'NEW ITEM IN THIS LOT' : 'ADD ITEM'),
+      title: Text(_isEditing ? 'Edit Item' : widget.forLot ? 'New Item in This Lot' : 'Add Item'),
       content: SizedBox(
         width: 360,
         child: SingleChildScrollView(
@@ -272,13 +272,13 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
                           OutlinedButton(
                             onPressed: _pickImage,
                             child: Text(
-                              _imagePath == null ? 'ADD PHOTO' : 'CHANGE PHOTO',
+                              _imagePath == null ? 'Add Photo' : 'Change Photo',
                             ),
                           ),
                           if (_imagePath != null)
                             TextButton(
                               onPressed: _removeImage,
-                              child: const Text('REMOVE'),
+                              child: const Text('Remove'),
                             ),
                         ],
                       ),
@@ -367,11 +367,11 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('CANCEL'),
+          child: const Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: _submit,
-          child: Text(_isEditing ? 'SAVE' : widget.forLot ? 'ADD TO LOT' : 'ADD'),
+          child: Text(_isEditing ? 'Save' : widget.forLot ? 'Add to Lot' : 'Add'),
         ),
       ],
     );

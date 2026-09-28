@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +12,7 @@ import '../../viewmodels/money_view_model.dart';
 import '../../viewmodels/sales_view_model.dart';
 import '../../viewmodels/session_view_model.dart';
 import '../../widgets/filter_bar.dart';
+import '../../widgets/ios_alert.dart';
 import '../../widgets/list_surface.dart';
 import '../../widgets/screen_header.dart';
 import '../../widgets/stat_tile.dart';
@@ -36,10 +38,10 @@ class MoneyScreen extends StatefulWidget {
 
 enum _LogFilter {
   all('All', ''),
-  capitalIn('Put in', 'PUT IN'),
-  expense('Expenses', 'EXPENSE'),
-  ownerDraw('Taken home', 'TAKEN HOME'),
-  stock('Stock bought', 'STOCK');
+  capitalIn('Put in', 'Put in'),
+  expense('Expenses', 'Expense'),
+  ownerDraw('Taken home', 'Taken home'),
+  stock('Stock bought', 'Stock');
 
   const _LogFilter(this.label, this.pill);
 
@@ -95,15 +97,15 @@ class _MoneyScreenState extends State<MoneyScreen> {
   Future<void> _confirmDelete(MoneyEntry entry) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('DELETE ENTRY'),
+      builder: (dialogContext) => IosAlert(
+        title: const Text('Delete Entry'),
         content: Text('Delete ${_describe(entry)} from ${_day.format(entry.at)}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: dialogContext.tokens.danger),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('DELETE'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -162,18 +164,18 @@ class _MoneyScreenState extends State<MoneyScreen> {
             actions: [
               OutlinedButton.icon(
                 onPressed: () => _record(MoneyEntryKind.capitalIn),
-                icon: const Icon(Icons.savings_outlined, size: 18),
-                label: const Text('PUT MONEY IN'),
+                icon: const Icon(CupertinoIcons.arrow_down_circle, size: 18),
+                label: const Text('Put Money In'),
               ),
               OutlinedButton.icon(
                 onPressed: () => _record(MoneyEntryKind.ownerDraw),
-                icon: const Icon(Icons.north_east, size: 18),
-                label: const Text('TAKE HOME'),
+                icon: const Icon(CupertinoIcons.arrow_up_right, size: 18),
+                label: const Text('Take Home'),
               ),
               ElevatedButton.icon(
                 onPressed: () => _record(MoneyEntryKind.expense),
-                icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                label: const Text('RECORD EXPENSE'),
+                icon: const Icon(CupertinoIcons.doc_text, size: 18),
+                label: const Text('Record Expense'),
               ),
             ],
           ),
@@ -213,10 +215,10 @@ class _MoneyScreenState extends State<MoneyScreen> {
                     },
                   ),
                   const SizedBox(height: AppSpacing.xl),
-                  ChoiceStrip<ReportRange>(
+                  SegmentedStrip<ReportRange>(
                     options: [
                       for (final r in ReportRange.values)
-                        if (r != ReportRange.today) (r, r == ReportRange.allTime ? 'SINCE BOOKS STARTED' : r.label),
+                        if (r != ReportRange.today) (r, r == ReportRange.allTime ? 'Since books started' : r.label),
                     ],
                     selected: _range,
                     onSelected: (r) => setState(() => _range = r),
@@ -227,14 +229,14 @@ class _MoneyScreenState extends State<MoneyScreen> {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final breakdown = _Card(
-                        title: 'PROFIT BREAKDOWN',
+                        title: 'Profit breakdown',
                         caption: _range == ReportRange.allTime
                             ? 'Since the books started'
                             : '${_range.description}, from ${_day.format(since)}',
                         child: ProfitBreakdown(statement: statement),
                       );
                       final chart = _Card(
-                        title: 'SALES VS COSTS',
+                        title: 'Sales vs costs',
                         caption: 'By month · costs are what sold, expenses, and losses',
                         child: SalesVsCostsChart(months: months),
                       );
@@ -302,7 +304,7 @@ class _MoneyLeftPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('MONEY IN THE SHOP', style: context.text.titleSmall),
+          Text('Money in the shop', style: context.text.titleSmall),
           const SizedBox(height: AppSpacing.md),
           Text(
             signedPeso(m.left, whole: true),
@@ -394,7 +396,6 @@ class _Panel extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.container),
-        border: Border.all(color: context.tokens.hairline),
       ),
       child: child,
     );
@@ -447,7 +448,7 @@ class _PaybackPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('PAYBACK', style: context.text.titleSmall),
+          Text('Payback', style: context.text.titleSmall),
           const SizedBox(height: AppSpacing.md),
           headline,
           const SizedBox(height: AppSpacing.sm),
@@ -456,8 +457,8 @@ class _PaybackPanel extends StatelessWidget {
           if (share == null)
             OutlinedButton.icon(
               onPressed: onPutIn,
-              icon: const Icon(Icons.savings_outlined, size: 18),
-              label: const Text('PUT MONEY IN'),
+              icon: const Icon(CupertinoIcons.arrow_down_circle, size: 18),
+              label: const Text('Put Money In'),
             )
           else
             _Meter(share: share),
@@ -584,7 +585,6 @@ class _Card extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.container),
-        border: Border.all(color: context.tokens.hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -676,7 +676,7 @@ class _MoneyLog extends StatelessWidget {
           'Money log',
           trailing: filter == _LogFilter.all || shown.isEmpty ? null : '${peso.format(total)} total',
         ),
-        ChoiceStrip<_LogFilter>(
+        SegmentedStrip<_LogFilter>(
           options: [for (final f in _LogFilter.values) (f, f.label)],
           selected: filter,
           onSelected: onFilter,
@@ -687,9 +687,8 @@ class _MoneyLog extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadius.container),
-              border: Border.all(color: context.tokens.hairline),
             ),
-            child: const EmptyState(icon: Icons.receipt_long_outlined, message: 'Nothing recorded yet'),
+            child: const EmptyState(icon: CupertinoIcons.doc_text, message: 'Nothing recorded yet'),
           )
         else
           ListSurface(children: [for (final r in shown) _LogRowView(row: r, onEdit: onEdit, onDelete: onDelete)]),
@@ -749,7 +748,7 @@ class _LogRowView extends StatelessWidget {
                         padding: const EdgeInsets.only(right: 14),
                         child: Align(
                           alignment: Alignment.centerRight,
-                          child: Icon(Icons.inventory_2_outlined, size: 16, color: context.tokens.mutedText),
+                          child: Icon(CupertinoIcons.cube_box, size: 16, color: context.tokens.mutedText),
                         ),
                       ),
                     )
@@ -757,12 +756,12 @@ class _LogRowView extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          icon: const Icon(CupertinoIcons.pencil, size: 18),
                           tooltip: 'Edit',
                           onPressed: () => onEdit(entry),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 18),
+                          icon: const Icon(CupertinoIcons.trash, size: 18),
                           tooltip: 'Delete',
                           onPressed: () => onDelete(entry),
                         ),

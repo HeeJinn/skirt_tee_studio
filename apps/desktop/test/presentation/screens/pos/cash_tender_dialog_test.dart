@@ -27,7 +27,7 @@ void main() {
     return result;
   }
 
-  Finder completeButton() => find.widgetWithText(ElevatedButton, 'COMPLETE SALE');
+  Finder completeButton() => find.widgetWithText(ElevatedButton, 'Complete Sale');
 
   testWidgets('tapping bills adds them up, shows change with a breakdown, returns the amount', (tester) async {
     final result = await open(tester, 657);

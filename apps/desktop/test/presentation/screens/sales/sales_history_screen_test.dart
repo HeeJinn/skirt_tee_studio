@@ -41,7 +41,7 @@ void main() {
     expect(find.text('Denim Skirt'), findsOneWidget);
     expect(find.text('Old Blouse'), findsNothing);
 
-    await tester.tap(find.text('7 DAYS'));
+    await tester.tap(find.text('7 days'));
     await tester.pumpAndSettle();
     expect(find.text('Old Blouse'), findsOneWidget);
 

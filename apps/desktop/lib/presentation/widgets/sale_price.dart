@@ -7,8 +7,8 @@ import 'status_pill.dart';
 
 final _peso = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
 
-/// The SALE tag, with how much is off when the sale sets a discount
-/// ("SALE −20%"). Items tagged before sales had discounts just say SALE.
+/// The Sale tag, with how much is off when the sale sets a discount
+/// ("Sale −20%"). Items tagged before sales had discounts just say Sale.
 class SalePill extends StatelessWidget {
   const SalePill({super.key, required this.item});
   final Item item;
@@ -16,7 +16,7 @@ class SalePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final off = item.percentOff;
-    return StatusPill(label: off == null ? 'SALE' : 'SALE −$off%', tone: PillTone.accent);
+    return StatusPill(label: off == null ? 'Sale' : 'Sale −$off%', tone: PillTone.accent);
   }
 }
 

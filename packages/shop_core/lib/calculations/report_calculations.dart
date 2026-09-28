@@ -73,10 +73,10 @@ extension ReportRangeX on ReportRange {
       };
 
   String get label => switch (this) {
-        ReportRange.today => 'TODAY',
-        ReportRange.last7Days => '7 DAYS',
-        ReportRange.last30Days => '30 DAYS',
-        ReportRange.allTime => 'ALL TIME',
+        ReportRange.today => 'Today',
+        ReportRange.last7Days => '7 days',
+        ReportRange.last30Days => '30 days',
+        ReportRange.allTime => 'All time',
       };
 
   /// Inclusive start-of-day; null for allTime (bounded by the data itself).

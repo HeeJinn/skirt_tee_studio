@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,6 +7,7 @@ import 'package:shop_core/domain/entities/cloud_sync.dart';
 import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 import '../../../widgets/app_snackbar.dart';
 import '../../../widgets/cloud_status.dart';
+import '../../../widgets/ios_alert.dart';
 
 /// Owners only: connect this computer to the shop's cloud backup, see how
 /// it's doing, or disconnect.
@@ -26,8 +28,8 @@ class CloudSyncPanel extends StatelessWidget {
   Future<void> _disconnect(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('DISCONNECT FROM CLOUD'),
+      builder: (dialogContext) => IosAlert(
+        title: const Text('Disconnect from Cloud'),
         content: const SizedBox(
           width: 380,
           child: Text(
@@ -36,11 +38,11 @@ class CloudSyncPanel extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: dialogContext.tokens.danger),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('DISCONNECT'),
+            child: const Text('Disconnect'),
           ),
         ],
       ),
@@ -63,7 +65,6 @@ class CloudSyncPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.container),
-        border: Border.all(color: tokens.hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,8 +95,8 @@ class CloudSyncPanel extends StatelessWidget {
             const SizedBox(height: AppSpacing.lg),
             ElevatedButton.icon(
               onPressed: sync.busy ? null : () => _connect(context),
-              icon: const Icon(Icons.cloud_upload_outlined, size: 18),
-              label: const Text('CONNECT TO CLOUD'),
+              icon: const Icon(CupertinoIcons.cloud_upload, size: 18),
+              label: const Text('Connect to Cloud'),
             ),
           ],
           if (state.isConnected) ...[
@@ -115,7 +116,7 @@ class CloudSyncPanel extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: sync.busy ? null : () => _disconnect(context),
-                  child: const Text('DISCONNECT'),
+                  child: const Text('Disconnect'),
                 ),
               ],
             ),
@@ -163,7 +164,7 @@ class _ConnectDialogState extends State<_ConnectDialog> {
     final busy = context.watch<CloudSyncViewModel>().busy;
 
     return AlertDialog(
-      title: const Text('CONNECT TO CLOUD'),
+      title: const Text('Connect to Cloud'),
       content: SizedBox(
         width: 380,
         child: Form(
@@ -204,13 +205,13 @@ class _ConnectDialogState extends State<_ConnectDialog> {
       actions: [
         TextButton(
           onPressed: busy ? null : () => Navigator.of(context).pop(false),
-          child: const Text('CANCEL'),
+          child: const Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: busy ? null : _submit,
           child: busy
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('CONNECT'),
+              : const Text('Connect'),
         ),
       ],
     );

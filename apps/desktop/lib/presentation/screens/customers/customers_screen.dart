@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -52,7 +53,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
           const SizedBox(height: 20),
           Expanded(
             child: customers.isEmpty
-                ? const EmptyState(icon: Icons.people_outline, message: 'No customers found')
+                ? const EmptyState(icon: CupertinoIcons.person_3, message: 'No customers found')
                 : SingleChildScrollView(
                     padding: const EdgeInsets.only(bottom: 24),
                     child: ListSurface(
@@ -109,7 +110,7 @@ class _CustomerRowState extends State<_CustomerRow> {
                           ),
                           if (customer.totalReservations > 1) ...[
                             const SizedBox(width: AppSpacing.sm),
-                            const StatusPill(label: 'REPEAT'),
+                            const StatusPill(label: 'Repeat'),
                           ],
                         ],
                       ),
@@ -127,7 +128,7 @@ class _CustomerRowState extends State<_CustomerRow> {
                 SizedBox(
                   width: 96,
                   child: pending > 0
-                      ? StatusPill(label: '$pending PENDING', tone: PillTone.warning)
+                      ? StatusPill(label: '$pending pending', tone: PillTone.warning)
                       : Text('All picked up', style: context.text.bodySmall),
                 ),
                 SizedBox(
@@ -142,7 +143,7 @@ class _CustomerRowState extends State<_CustomerRow> {
                 AnimatedRotation(
                   turns: _expanded ? 0.5 : 0,
                   duration: const Duration(milliseconds: 180),
-                  child: Icon(Icons.expand_more, size: 20, color: tokens.mutedText),
+                  child: Icon(CupertinoIcons.chevron_down, size: 20, color: tokens.mutedText),
                 ),
               ],
             ),
@@ -174,8 +175,8 @@ class _CustomerRowState extends State<_CustomerRow> {
                                 child: Align(
                                   alignment: Alignment.centerRight,
                                   child: r.status == ReservationStatus.pickedUp
-                                      ? const StatusPill(label: 'PICKED UP', tone: PillTone.success)
-                                      : const StatusPill(label: 'PENDING', tone: PillTone.warning),
+                                      ? const StatusPill(label: 'Picked up', tone: PillTone.success)
+                                      : const StatusPill(label: 'Pending', tone: PillTone.warning),
                                 ),
                               ),
                             ],

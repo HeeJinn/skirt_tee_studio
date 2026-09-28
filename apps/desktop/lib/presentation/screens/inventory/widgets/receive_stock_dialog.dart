@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -288,7 +289,7 @@ class _ReceiveStockDialogState extends State<ReceiveStockDialog> {
               const SizedBox(width: AppSpacing.sm),
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: ElevatedButton(onPressed: submit, child: const Text('ADD')),
+                child: ElevatedButton(onPressed: submit, child: const Text('Add')),
               ),
             ],
           ),
@@ -310,7 +311,7 @@ class _ReceiveStockDialogState extends State<ReceiveStockDialog> {
     final pickable = widget.items.where((i) => !_drafts.any((d) => d.item.id == i.id)).toList();
 
     return AlertDialog(
-      title: const Text('RECEIVE STOCK'),
+      title: const Text('Receive Stock'),
       content: SizedBox(
         width: 760,
         child: SingleChildScrollView(
@@ -416,8 +417,8 @@ class _ReceiveStockDialogState extends State<ReceiveStockDialog> {
                       message: 'Add a new item with a photo',
                       child: OutlinedButton.icon(
                         onPressed: _addNewItem,
-                        icon: const Icon(Icons.add_a_photo_outlined, size: 18),
-                        label: const Text('NEW ITEM'),
+                        icon: const Icon(CupertinoIcons.camera, size: 18),
+                        label: const Text('New Item'),
                       ),
                     ),
                   ],
@@ -442,10 +443,10 @@ class _ReceiveStockDialogState extends State<ReceiveStockDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CANCEL')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
         ElevatedButton(
           onPressed: _submit,
-          child: Text(pieces == 0 ? 'RECEIVE' : 'RECEIVE $pieces ${pieces == 1 ? 'PIECE' : 'PIECES'}'),
+          child: Text(pieces == 0 ? 'Receive' : 'Receive $pieces ${pieces == 1 ? 'Piece' : 'Pieces'}'),
         ),
       ],
     );
@@ -473,9 +474,9 @@ class _PaidFromPicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('PAID WITH', style: context.text.labelSmall),
+        Text('Paid with', style: context.text.labelSmall),
         const SizedBox(height: 6),
-        ChoiceStrip<PaidFrom>(
+        SegmentedStrip<PaidFrom>(
           options: [for (final p in PaidFrom.values) (p, p.label)],
           selected: paidFrom,
           onSelected: onPaidFrom,
@@ -513,12 +514,12 @@ class _LineHeader extends StatelessWidget {
       padding: _linePadding,
       child: Row(
         children: [
-          Expanded(flex: _flexName, child: Text('ITEM', style: style)),
-          SizedBox(width: _qtyWidth, child: Text('PIECES', style: style)),
+          Expanded(flex: _flexName, child: Text('Item', style: style)),
+          SizedBox(width: _qtyWidth, child: Text('Pieces', style: style)),
           const SizedBox(width: AppSpacing.md),
-          Expanded(flex: _flexMoney, child: Text('SELLS FOR', style: style, textAlign: TextAlign.right)),
-          Expanded(flex: _flexMoney, child: Text('COST EACH', style: style, textAlign: TextAlign.right)),
-          Expanded(flex: _flexMoney, child: Text('PROFIT EACH', style: style, textAlign: TextAlign.right)),
+          Expanded(flex: _flexMoney, child: Text('Sells for', style: style, textAlign: TextAlign.right)),
+          Expanded(flex: _flexMoney, child: Text('Cost each', style: style, textAlign: TextAlign.right)),
+          Expanded(flex: _flexMoney, child: Text('Profit each', style: style, textAlign: TextAlign.right)),
           const SizedBox(width: _removeWidth),
         ],
       ),
@@ -614,7 +615,7 @@ class _LineRow extends StatelessWidget {
           ),
           SizedBox(
             width: _removeWidth,
-            child: IconButton(icon: const Icon(Icons.close, size: 16), tooltip: 'Remove from lot', onPressed: onRemove),
+            child: IconButton(icon: const Icon(CupertinoIcons.xmark, size: 16), tooltip: 'Remove from lot', onPressed: onRemove),
           ),
         ],
       ),
@@ -662,19 +663,17 @@ class _ItemPickerState extends State<_ItemPicker> {
         focusNode: focusNode,
         onSubmitted: (_) => onSubmitted(),
         decoration: const InputDecoration(
-          prefixIcon: Icon(Icons.search, size: 20),
+          prefixIcon: Icon(CupertinoIcons.search, size: 20),
           hintText: 'Add an item from inventory',
         ),
       ),
       optionsViewBuilder: (context, onSelected, options) => Align(
         alignment: Alignment.topLeft,
         child: Material(
-          color: context.colors.surface,
-          elevation: 6,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.container),
-            side: BorderSide(color: context.tokens.hairline),
-          ),
+          color: context.colors.surfaceContainerHigh,
+          elevation: 8,
+          shadowColor: const Color(0x55000000),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 240, maxWidth: 420),
             child: ListView(
@@ -747,10 +746,10 @@ class _LotSummary extends StatelessWidget {
         children: [
           Row(
             children: [
-              cell('LOT COSTS', _peso.format(totalCost)),
-              cell('SELLS FOR', _peso.format(sellingValue)),
+              cell('Lot costs', _peso.format(totalCost)),
+              cell('Sells for', _peso.format(sellingValue)),
               cell(
-                'PROFIT IF ALL SELL',
+                'Profit if all sell',
                 '${_peso.format(profit)} · ${(margin * 100).toStringAsFixed(0)}%',
                 color: losing ? context.tokens.danger : context.tokens.success,
               ),

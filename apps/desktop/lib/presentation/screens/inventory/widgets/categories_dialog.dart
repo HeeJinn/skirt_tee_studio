@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 
 import 'package:shop_core/core/theme/app_theme.dart';
@@ -52,7 +53,7 @@ class _CategoriesDialogState extends State<CategoriesDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('CATEGORIES'),
+      title: const Text('Categories'),
       content: SizedBox(
         width: 400,
         child: Column(
@@ -98,7 +99,7 @@ class _CategoriesDialogState extends State<CategoriesDialog> {
                 const SizedBox(width: AppSpacing.sm),
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: OutlinedButton(onPressed: _add, child: const Text('ADD')),
+                  child: OutlinedButton(onPressed: _add, child: const Text('Add')),
                 ),
               ],
             ),
@@ -106,8 +107,8 @@ class _CategoriesDialogState extends State<CategoriesDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CANCEL')),
-        ElevatedButton(onPressed: () => Navigator.of(context).pop(_categories), child: const Text('SAVE')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        ElevatedButton(onPressed: () => Navigator.of(context).pop(_categories), child: const Text('Save')),
       ],
     );
   }
@@ -129,7 +130,7 @@ class _CategoryRow extends StatelessWidget {
           Expanded(child: Text(name, style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w600))),
           Text(count == 0 ? 'no items' : '$count ${count == 1 ? 'item' : 'items'}', style: context.text.bodySmall),
           if (count == 0)
-            IconButton(icon: const Icon(Icons.close, size: 16), tooltip: 'Remove', onPressed: onRemove)
+            IconButton(icon: const Icon(CupertinoIcons.xmark, size: 16), tooltip: 'Remove', onPressed: onRemove)
           else
             const SizedBox(width: 48, height: 48),
         ],

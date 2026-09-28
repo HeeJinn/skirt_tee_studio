@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,6 +7,7 @@ import 'package:shop_core/domain/entities/appearance.dart';
 import '../../viewmodels/session_view_model.dart';
 import '../../viewmodels/settings_view_model.dart';
 import '../../widgets/list_surface.dart';
+import '../../widgets/filter_bar.dart';
 import '../../widgets/screen_header.dart';
 import 'widgets/cloud_sync_panel.dart';
 
@@ -83,16 +85,15 @@ class _OwnerNamePanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.container),
-        border: Border.all(color: context.tokens.hairline),
       ),
       child: Row(
         children: [
-          Icon(Icons.person_outline, size: 22, color: context.tokens.mutedText),
+          Icon(CupertinoIcons.person, size: 22, color: context.tokens.mutedText),
           const SizedBox(width: AppSpacing.md),
           Expanded(child: Text(name, style: context.text.titleMedium, overflow: TextOverflow.ellipsis)),
           TextButton(
             onPressed: () => showDialog<void>(context: context, builder: (_) => const _RenameDialog()),
-            child: const Text('CHANGE'),
+            child: const Text('Change'),
           ),
         ],
       ),
@@ -127,7 +128,7 @@ class _RenameDialogState extends State<_RenameDialog> {
   Widget build(BuildContext context) {
     final session = context.read<SessionViewModel>();
     return AlertDialog(
-      title: const Text('CHANGE YOUR NAME'),
+      title: const Text('Change Your Name'),
       content: SizedBox(
         width: 360,
         child: Form(
@@ -153,8 +154,8 @@ class _RenameDialogState extends State<_RenameDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CANCEL')),
-        ElevatedButton(onPressed: _submit, child: const Text('SAVE')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        ElevatedButton(onPressed: _submit, child: const Text('Save')),
       ],
     );
   }
@@ -162,84 +163,23 @@ class _RenameDialogState extends State<_RenameDialog> {
 
 /// Three-way System / Light / Dark switch — one connected control rather
 /// than three loose chips, since exactly one is always on.
+/// Light, dark, or following Windows — an iOS segmented control.
 class _ModeToggle extends StatelessWidget {
   const _ModeToggle({required this.selected, required this.onSelected});
 
   final AppearanceMode selected;
   final ValueChanged<AppearanceMode> onSelected;
 
-  static const _options = [
-    (AppearanceMode.system, 'System', Icons.brightness_auto_outlined),
-    (AppearanceMode.light, 'Light', Icons.light_mode_outlined),
-    (AppearanceMode.dark, 'Dark', Icons.dark_mode_outlined),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.all(3),
-        decoration: BoxDecoration(
-          color: tokens.sunken,
-          borderRadius: BorderRadius.circular(AppRadius.control + 2),
-          border: Border.all(color: tokens.hairline),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final (mode, label, icon) in _options)
-              _ModeSegment(
-                label: label,
-                icon: icon,
-                selected: mode == selected,
-                onTap: () => onSelected(mode),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ModeSegment extends StatelessWidget {
-  const _ModeSegment({required this.label, required this.icon, required this.selected, required this.onTap});
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected ? context.colors.onPrimary : context.tokens.mutedText;
-    return Semantics(
-      button: true,
+    return SegmentedStrip<AppearanceMode>(
+      options: const [
+        (AppearanceMode.system, 'System'),
+        (AppearanceMode.light, 'Light'),
+        (AppearanceMode.dark, 'Dark'),
+      ],
       selected: selected,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        decoration: BoxDecoration(
-          color: selected ? context.colors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.control),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 16, color: color),
-                const SizedBox(width: 6),
-                Text(label, style: context.text.labelLarge?.copyWith(color: color)),
-              ],
-            ),
-          ),
-        ),
-      ),
+      onSelected: onSelected,
     );
   }
 }
@@ -314,7 +254,7 @@ class _PresetCardState extends State<_PresetCard> {
                             transitionBuilder: (child, animation) =>
                                 ScaleTransition(scale: animation, child: child),
                             child: widget.selected
-                                ? Icon(Icons.check_circle, key: const ValueKey(true), size: 18, color: context.colors.primary)
+                                ? Icon(CupertinoIcons.checkmark_circle_fill, key: const ValueKey(true), size: 18, color: context.colors.primary)
                                 : const SizedBox(key: ValueKey(false), width: 18, height: 18),
                           ),
                         ],
@@ -401,7 +341,7 @@ class _MiniApp extends StatelessWidget {
                             borderRadius: BorderRadius.circular(2),
                           ),
                           child: Text(
-                            'SALE',
+                            'Sale',
                             style: TextStyle(
                               fontFamily: kSansFont,
                               fontSize: 7,

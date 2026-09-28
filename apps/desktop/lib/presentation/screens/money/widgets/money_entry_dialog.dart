@@ -74,9 +74,9 @@ class _MoneyEntryDialogState extends State<MoneyEntryDialog> {
   }
 
   String get _title => switch (_kind) {
-        MoneyEntryKind.capitalIn => 'MONEY PUT IN',
-        MoneyEntryKind.expense => 'EXPENSE',
-        MoneyEntryKind.ownerDraw => 'TAKEN HOME',
+        MoneyEntryKind.capitalIn => 'Money Put In',
+        MoneyEntryKind.expense => 'Expense',
+        MoneyEntryKind.ownerDraw => 'Taken home',
       };
 
   String get _explainer => switch (_kind) {
@@ -91,7 +91,7 @@ class _MoneyEntryDialogState extends State<MoneyEntryDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.entry == null ? _title : 'EDIT · $_title'),
+      title: Text(widget.entry == null ? _title : 'Edit $_title'),
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
@@ -134,9 +134,9 @@ class _MoneyEntryDialogState extends State<MoneyEntryDialog> {
                     onChanged: (c) => setState(() => _category = c!),
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  Text('PAID WITH', style: context.text.labelSmall),
+                  Text('Paid with', style: context.text.labelSmall),
                   const SizedBox(height: 6),
-                  ChoiceStrip<PaidFrom>(
+                  SegmentedStrip<PaidFrom>(
                     options: [for (final p in PaidFrom.values) (p, p.label)],
                     selected: _paidFrom,
                     onSelected: (p) => setState(() => _paidFrom = p),
@@ -148,7 +148,7 @@ class _MoneyEntryDialogState extends State<MoneyEntryDialog> {
                 ],
                 if (_asksPerson) ...[
                   const SizedBox(height: AppSpacing.lg),
-                  Text(_kind == MoneyEntryKind.ownerDraw ? 'TAKEN BY' : 'WHOSE MONEY', style: context.text.labelSmall),
+                  Text(_kind == MoneyEntryKind.ownerDraw ? 'Taken by' : 'Whose money', style: context.text.labelSmall),
                   const SizedBox(height: 6),
                   ChoiceStrip<String?>(
                     options: [(null, 'Both of us'), for (final n in widget.ownerNames) (n, n)],
@@ -164,8 +164,8 @@ class _MoneyEntryDialogState extends State<MoneyEntryDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CANCEL')),
-        ElevatedButton(onPressed: _submit, child: Text(widget.entry == null ? 'SAVE' : 'SAVE CHANGES')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        ElevatedButton(onPressed: _submit, child: Text(widget.entry == null ? 'Save' : 'Save Changes')),
       ],
     );
   }

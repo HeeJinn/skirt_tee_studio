@@ -78,7 +78,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Ana'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('RECEIVE 20 PIECES'));
+      await tester.tap(find.text('Receive 20 Pieces'));
       await tester.pumpAndSettle();
 
       final lot = result()!;
@@ -95,7 +95,7 @@ void main() {
       final result = await _open<ReceivedLot>(tester, const ReceiveStockDialog(items: [_tee], ownerNames: []));
 
       await tester.enterText(_field('Price paid for the lot (₱)'), '500');
-      await tester.tap(find.text('RECEIVE'));
+      await tester.tap(find.text('Receive'));
       await tester.pumpAndSettle();
 
       expect(find.text('Add the items this lot was sorted into.'), findsOneWidget);
@@ -120,7 +120,7 @@ void main() {
       // No name: named after the category (the first one, T-Shirt).
       await tester.enterText(_quick('Sells for ₱'), '150');
       await tester.enterText(_quick('Pieces'), '12');
-      await tester.tap(find.text('ADD'));
+      await tester.tap(find.text('Add'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byType(CategoryField));
@@ -139,7 +139,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('In this bundle: 15 T-Shirt · 5 Long Sleeves'), findsOneWidget);
-      await tester.tap(find.text('RECEIVE 20 PIECES'));
+      await tester.tap(find.text('Receive 20 Pieces'));
       await tester.pumpAndSettle();
 
       final lot = result()!;
@@ -156,7 +156,7 @@ void main() {
       await tester.enterText(_quick('Item name'), 'Basic Tee');
       await tester.enterText(_quick('Sells for ₱'), '200');
       await tester.enterText(_quick('Pieces'), '3');
-      await tester.tap(find.text('ADD'));
+      await tester.tap(find.text('Add'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('"Basic Tee" already sells for ₱150.00'), findsOneWidget);
@@ -169,7 +169,7 @@ void main() {
       await tester.enterText(_field('Price paid for the lot (₱)'), '500');
       await tester.enterText(_quick('Sells for ₱'), '100');
       await tester.enterText(_quick('Pieces'), '8');
-      await tester.tap(find.text('RECEIVE'));
+      await tester.tap(find.text('Receive'));
       await tester.pumpAndSettle();
 
       expect(result()!.lines.single.qty, 8);
@@ -193,12 +193,12 @@ void main() {
       await tester.enterText(_field('Pieces'), '5');
       await tester.pumpAndSettle();
       expect(find.text('Records a ₱500.00 loss at cost.'), findsOneWidget);
-      await tester.tap(find.text('REMOVE'));
+      await tester.tap(find.text('Remove'));
       await tester.pumpAndSettle();
       expect(find.text('Only 4 in stock'), findsOneWidget);
 
       await tester.enterText(_field('Pieces'), '2');
-      await tester.tap(find.text('REMOVE'));
+      await tester.tap(find.text('Remove'));
       await tester.pumpAndSettle();
       expect(result()!.qty, 2);
       expect(result()!.reason, WriteOffReason.damaged);
@@ -211,7 +211,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Why'), findsNothing);
       await tester.enterText(_field('Pieces'), '9');
-      await tester.tap(find.text('ADD BACK'));
+      await tester.tap(find.text('Add Back'));
       await tester.pumpAndSettle();
 
       expect(result()!.isFound, isTrue);
@@ -229,7 +229,7 @@ void main() {
       await tester.enterText(_field('Already in stock'), '6');
       await tester.pumpAndSettle();
       await tester.enterText(_field(_costLabel), '60');
-      await tester.tap(find.text('ADD'));
+      await tester.tap(find.text('Add'));
       await tester.pumpAndSettle();
 
       expect(result()!.qtyOnHand, 6);
@@ -247,7 +247,7 @@ void main() {
       await tester.enterText(_field('Already in stock'), '0');
       await tester.pumpAndSettle();
       expect(_field(_costLabel), findsNothing);
-      await tester.tap(find.text('ADD'));
+      await tester.tap(find.text('Add'));
       await tester.pumpAndSettle();
 
       expect(result()!.unitCost, isNull);
@@ -263,7 +263,7 @@ void main() {
       await tester.enterText(_field('Percent off (%)'), '20');
       await tester.pumpAndSettle();
       expect(find.text('Sells for ₱120.00 instead of ₱150.00.'), findsOneWidget);
-      await tester.tap(find.text('SAVE'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(result()!.onSale, isTrue);
@@ -278,7 +278,7 @@ void main() {
       await tester.tap(find.text('On sale'));
       await tester.pumpAndSettle();
       await tester.enterText(_field('Sale price (₱)'), '150');
-      await tester.tap(find.text('SAVE'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
       expect(find.text('Less than the regular ₱150.00'), findsOneWidget);
       expect(result(), isNull);
@@ -286,7 +286,7 @@ void main() {
       await tester.enterText(_field('Sale price (₱)'), '99');
       await tester.pumpAndSettle();
       expect(find.text('Sells for ₱99.00 instead of ₱150.00 — 34% off.'), findsOneWidget);
-      await tester.tap(find.text('SAVE'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
       expect(result()!.salePrice, 99);
     });
@@ -306,7 +306,7 @@ void main() {
       expect(find.text('Sells for ₱120.00 instead of ₱150.00.'), findsOneWidget);
       await tester.tap(find.text('On sale'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('SAVE'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(result()!.onSale, isFalse);
@@ -317,7 +317,7 @@ void main() {
       const tagged = Item(id: 'b', name: 'Bin Tee', category: 'T-Shirt', unitPrice: 50, qtyOnHand: 4, onSale: true);
       await _open<Item>(tester, const ItemFormDialog(item: tagged));
 
-      expect(find.text('Tagged SALE with no discount yet — set one, or turn On sale off.'), findsOneWidget);
+      expect(find.text('Tagged Sale with no discount yet — set one, or turn On sale off.'), findsOneWidget);
     });
 
     testWidgets('a category not on the list can be added from the form', (tester) async {
@@ -328,13 +328,13 @@ void main() {
       await tester.tap(find.text('New category…').last);
       await tester.pumpAndSettle();
       await tester.enterText(find.widgetWithText(TextFormField, 'Name').last, 'Dress');
-      await tester.tap(find.text('ADD').last);
+      await tester.tap(find.text('Add').last);
       await tester.pumpAndSettle();
 
       await tester.enterText(_field('Name'), 'Floral dress');
       await tester.enterText(_field('Sells for (₱)'), '600');
       await tester.enterText(_field('Already in stock'), '0');
-      await tester.tap(find.text('ADD'));
+      await tester.tap(find.text('Add'));
       await tester.pumpAndSettle();
 
       expect(result()!.category, 'Dress');
@@ -348,12 +348,12 @@ void main() {
       await tester.tap(find.text('New category…').last);
       await tester.pumpAndSettle();
       await tester.enterText(find.widgetWithText(TextFormField, 'Name').last, ' long sleeves ');
-      await tester.tap(find.text('ADD').last);
+      await tester.tap(find.text('Add').last);
       await tester.pumpAndSettle();
       await tester.enterText(_field('Name'), 'Striped top');
       await tester.enterText(_field('Sells for (₱)'), '180');
       await tester.enterText(_field('Already in stock'), '0');
-      await tester.tap(find.text('ADD'));
+      await tester.tap(find.text('Add'));
       await tester.pumpAndSettle();
 
       expect(result()!.category, 'Long Sleeves');
@@ -367,7 +367,7 @@ void main() {
       expect(_field(_costLabel), findsNothing);
       expect(find.text('You paid ₱100.00 each.'), findsOneWidget);
       await tester.enterText(_field('Sells for (₱)'), '160');
-      await tester.tap(find.text('SAVE'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(result()!.unitPrice, 160);
@@ -378,10 +378,10 @@ void main() {
     testWidgets('an existing item\'s cost can be corrected behind Change', (tester) async {
       final result = await _open<Item>(tester, const ItemFormDialog(item: _tee));
 
-      await tester.tap(find.text('CHANGE'));
+      await tester.tap(find.text('Change'));
       await tester.pumpAndSettle();
       await tester.enterText(_field(_costLabel), '90');
-      await tester.tap(find.text('SAVE'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(result()!.unitCost, 90);
@@ -392,10 +392,10 @@ void main() {
       final result = await _open<Item>(tester, const ItemFormDialog(item: oldStock));
 
       expect(find.text('No cost yet, so profit on these isn\'t counted.'), findsOneWidget);
-      await tester.tap(find.text('SET COST'));
+      await tester.tap(find.text('Set Cost'));
       await tester.pumpAndSettle();
       await tester.enterText(_field(_costLabel), '80');
-      await tester.tap(find.text('SAVE'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(result()!.unitCost, 80);
@@ -404,19 +404,19 @@ void main() {
     testWidgets('an item with no pieces and no cost says nothing about cost', (tester) async {
       await _open<Item>(tester, const ItemFormDialog(item: _skirt));
 
-      expect(find.text('SET COST'), findsNothing);
+      expect(find.text('Set Cost'), findsNothing);
       expect(find.textContaining('No cost yet'), findsNothing);
     });
 
     testWidgets('a new item for a lot asks for neither stock nor cost', (tester) async {
       final result = await _open<Item>(tester, const ItemFormDialog(forLot: true));
 
-      expect(find.text('NEW ITEM IN THIS LOT'), findsOneWidget);
+      expect(find.text('New Item in This Lot'), findsOneWidget);
       expect(_field(_costLabel), findsNothing);
       expect(_field('Already in stock'), findsNothing);
       await tester.enterText(_field('Name'), 'Kids Tee');
       await tester.enterText(_field('Sells for (₱)'), '100');
-      await tester.tap(find.text('ADD TO LOT'));
+      await tester.tap(find.text('Add to Lot'));
       await tester.pumpAndSettle();
 
       expect(result()!.qtyOnHand, 0);
