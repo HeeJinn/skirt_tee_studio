@@ -14,6 +14,13 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<void> setLowStockThreshold(int value) => _localDataSource.setLowStockThreshold(value);
 
   @override
+  Future<List<String>> getCategories() async =>
+      await _localDataSource.getCategories() ?? SettingsRepository.defaultCategories;
+
+  @override
+  Future<void> setCategories(List<String> categories) => _localDataSource.setCategories(categories);
+
+  @override
   Future<String?> getThemePresetId() => _localDataSource.getThemePresetId();
 
   @override

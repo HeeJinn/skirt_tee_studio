@@ -83,7 +83,7 @@ class ReservationViewModel extends ChangeNotifier {
       paymentMethod: paymentMethod,
       amountTendered: amountTendered,
       lineItems: [
-        SaleLineItem(itemId: item.id, itemName: item.name, unitPrice: item.unitPrice, qty: 1),
+        SaleLineItem(itemId: item.id, itemName: item.name, unitPrice: item.sellingPrice, qty: 1),
       ],
     ));
     await _repository.update(reservation.copyWith(status: ReservationStatus.pickedUp));

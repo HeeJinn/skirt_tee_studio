@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 
 import 'package:shop_core/core/theme/app_theme.dart';
@@ -50,7 +51,7 @@ class ProfitBreakdown extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.info_outline, size: 16, color: context.tokens.mutedText),
+                Icon(CupertinoIcons.info_circle, size: 16, color: context.tokens.mutedText),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(

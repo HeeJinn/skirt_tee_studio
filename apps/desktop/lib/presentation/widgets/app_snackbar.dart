@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 
 import 'package:shop_core/core/theme/app_theme.dart';
@@ -11,7 +12,7 @@ void showAppSnackBar(BuildContext context, String message, {bool isError = false
     SnackBar(
       content: Row(
         children: [
-          Icon(isError ? Icons.error_outline : Icons.check_circle_outline, size: 18, color: onInk),
+          Icon(isError ? CupertinoIcons.exclamationmark_circle : CupertinoIcons.checkmark_circle, size: 18, color: onInk),
           const SizedBox(width: AppSpacing.md),
           Expanded(child: Text(message)),
         ],

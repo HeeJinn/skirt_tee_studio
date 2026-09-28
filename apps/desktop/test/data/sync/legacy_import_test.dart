@@ -102,7 +102,7 @@ void main() {
 
     final item = (await ItemLocalDataSourceImpl(db).getAll()).single;
     expect(item.qtyOnHand, 8);
-    expect(item.isBargain, isTrue);
+    expect(item.onSale, isTrue);
     expect(item.unitCost, 90);
     expect(item.imagePath, ItemImageStorage.instance.pathFor('abc.png'), reason: 'photo kept by file name');
 

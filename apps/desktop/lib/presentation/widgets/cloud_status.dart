@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -21,19 +22,19 @@ class CloudStatusLook {
 
     return switch (state.status) {
       CloudStatus.upToDate => CloudStatusLook(
-          icon: Icons.cloud_done_outlined,
+          icon: CupertinoIcons.checkmark_circle,
           label: 'Backed up',
           detail: state.lastSyncedAt == null ? 'Everything is in the cloud' : 'Last synced ${formatSyncTime(state.lastSyncedAt!, now: now)}',
           color: tokens.success,
         ),
       CloudStatus.syncing => CloudStatusLook(
-          icon: Icons.cloud_sync_outlined,
+          icon: CupertinoIcons.arrow_2_circlepath,
           label: 'Syncing',
           detail: pending > 0 ? 'Uploading $changes' : 'Checking the cloud for changes',
           color: tokens.mutedText,
         ),
       CloudStatus.offline => CloudStatusLook(
-          icon: Icons.cloud_off_outlined,
+          icon: CupertinoIcons.wifi_slash,
           label: 'Offline',
           detail: pending > 0
               ? '$changes will upload when the internet is back'
@@ -41,26 +42,26 @@ class CloudStatusLook {
           color: tokens.warning,
         ),
       CloudStatus.refused => CloudStatusLook(
-          icon: Icons.gpp_maybe_outlined,
+          icon: CupertinoIcons.exclamationmark_shield,
           label: 'Cloud refused',
           detail: 'The internet is fine, but the cloud turned this computer away — its setup needs fixing. '
               'Changes wait on this computer.',
           color: tokens.danger,
         ),
       CloudStatus.paused => CloudStatusLook(
-          icon: Icons.sync_problem_outlined,
+          icon: CupertinoIcons.exclamationmark_triangle,
           label: 'Sync paused',
           detail: 'The cloud refused a change, so uploads are waiting. Nothing is lost from this computer.',
           color: tokens.danger,
         ),
       CloudStatus.signedOut => CloudStatusLook(
-          icon: Icons.cloud_outlined,
+          icon: CupertinoIcons.cloud,
           label: 'Not connected',
           detail: 'This computer isn\'t backing up to the cloud',
           color: tokens.mutedText,
         ),
       CloudStatus.notConfigured => CloudStatusLook(
-          icon: Icons.cloud_outlined,
+          icon: CupertinoIcons.cloud,
           label: 'Not available',
           detail: 'Cloud backup isn\'t set up in this version of the app',
           color: tokens.mutedText,

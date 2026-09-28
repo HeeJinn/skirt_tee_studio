@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lottie/lottie.dart';
@@ -25,6 +26,6 @@ void main() {
       theme: AppTheme.light,
       home: const MediaQuery(data: MediaQueryData(disableAnimations: true), child: Scaffold(body: SuccessCheck())),
     ));
-    expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.checkmark_circle), findsOneWidget);
   });
 }

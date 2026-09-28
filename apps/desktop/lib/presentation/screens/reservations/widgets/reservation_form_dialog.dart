@@ -76,7 +76,7 @@ class _ReservationFormDialogState extends State<ReservationFormDialog> {
   Widget build(BuildContext context) {
     if (widget.items.isEmpty) {
       return AlertDialog(
-        title: const Text('ADD RESERVATION'),
+        title: const Text('Add Reservation'),
         content: const Text('Add an item to inventory first before logging a reservation.'),
         actions: [
           TextButton(
@@ -88,7 +88,7 @@ class _ReservationFormDialogState extends State<ReservationFormDialog> {
     }
 
     return AlertDialog(
-      title: Text(_isEditing ? 'EDIT RESERVATION' : 'ADD RESERVATION'),
+      title: Text(_isEditing ? 'Edit Reservation' : 'Add Reservation'),
       content: SizedBox(
         width: 360,
         child: Form(
@@ -121,7 +121,7 @@ class _ReservationFormDialogState extends State<ReservationFormDialog> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Pickup: ${_pickupDate.month}/${_pickupDate.day}/${_pickupDate.year}'),
-                  TextButton(onPressed: _pickDate, child: const Text('CHANGE')),
+                  TextButton(onPressed: _pickDate, child: const Text('Change')),
                 ],
               ),
             ],
@@ -131,9 +131,9 @@ class _ReservationFormDialogState extends State<ReservationFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('CANCEL'),
+          child: const Text('Cancel'),
         ),
-        ElevatedButton(onPressed: _submit, child: Text(_isEditing ? 'SAVE' : 'ADD')),
+        ElevatedButton(onPressed: _submit, child: Text(_isEditing ? 'Save' : 'Add')),
       ],
     );
   }

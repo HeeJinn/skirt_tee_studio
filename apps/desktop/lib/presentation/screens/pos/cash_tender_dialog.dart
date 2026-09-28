@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -16,7 +17,7 @@ String formatDenomination(int centavos) => centavos >= 100 ? _wholePeso.format(c
 Future<double?> showCashTenderDialog(
   BuildContext context, {
   required double total,
-  String confirmLabel = 'COMPLETE SALE',
+  String confirmLabel = 'Complete Sale',
 }) =>
     showDialog<double>(
       context: context,
@@ -28,7 +29,7 @@ Future<double?> showCashTenderDialog(
 /// amount, or type it. Change comes with a bill-and-coin breakdown so the
 /// cashier can count it straight out of the drawer.
 class CashTenderDialog extends StatefulWidget {
-  const CashTenderDialog({super.key, required this.total, this.confirmLabel = 'COMPLETE SALE'});
+  const CashTenderDialog({super.key, required this.total, this.confirmLabel = 'Complete Sale'});
   final double total;
   final String confirmLabel;
 
@@ -85,7 +86,7 @@ class _CashTenderDialogState extends State<CashTenderDialog> {
     final change = amount != null && _covers ? changeDue(amount, widget.total) : null;
 
     return AlertDialog(
-      title: const Text('CASH PAYMENT'),
+      title: const Text('Cash Payment'),
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
@@ -114,7 +115,7 @@ class _CashTenderDialogState extends State<CashTenderDialog> {
                   prefixText: '₱ ',
                   suffixIcon: _received.text.isEmpty
                       ? null
-                      : IconButton(icon: const Icon(Icons.close, size: 18), tooltip: 'Clear', onPressed: _clear),
+                      : IconButton(icon: const Icon(CupertinoIcons.xmark, size: 18), tooltip: 'Clear', onPressed: _clear),
                 ),
                 onChanged: (_) => setState(_tally.clear),
                 onSubmitted: (_) => _submit(),
@@ -132,17 +133,16 @@ class _CashTenderDialogState extends State<CashTenderDialog> {
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
-              Text('CUSTOMER HANDED OVER · TAP TO ADD', style: context.text.labelSmall),
+              Text('Customer handed over · tap to add', style: context.text.labelSmall),
               const SizedBox(height: AppSpacing.sm),
               _DenominationPad(tally: _tally, onTap: _addDenomination),
               const SizedBox(height: AppSpacing.lg),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: tokens.sunken,
-                  borderRadius: BorderRadius.circular(AppRadius.container),
-                  border: Border.all(color: short ? tokens.danger : tokens.hairline),
+                decoration: ShapeDecoration(
+                  color: short ? tokens.danger.withValues(alpha: 0.1) : tokens.sunken,
+                  shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(AppRadius.container - 4)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -167,7 +167,7 @@ class _CashTenderDialogState extends State<CashTenderDialog> {
                     ),
                     if (change != null && change > 0) ...[
                       const SizedBox(height: AppSpacing.md),
-                      Text('GIVE BACK', style: context.text.labelSmall),
+                      Text('Give back', style: context.text.labelSmall),
                       const SizedBox(height: AppSpacing.xs),
                       ChangeBreakdownChips(change: change),
                     ] else if (change == 0) ...[
@@ -182,7 +182,7 @@ class _CashTenderDialogState extends State<CashTenderDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CANCEL')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
         ElevatedButton(onPressed: _covers ? _submit : null, child: Text(widget.confirmLabel)),
       ],
     );
@@ -237,11 +237,10 @@ class _DenominationButton extends StatelessWidget {
           child: OutlinedButton.icon(
             onPressed: onTap,
             style: OutlinedButton.styleFrom(
-              backgroundColor: context.colors.surface,
-              side: BorderSide(color: count > 0 ? context.colors.onSurface : context.tokens.hairline),
+              foregroundColor: context.colors.onSurface,
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             ),
-            icon: Icon(bill ? Icons.payments_outlined : Icons.toll_outlined, size: 16),
+            icon: Icon(bill ? CupertinoIcons.rectangle : CupertinoIcons.circle, size: 16),
             label: Text(
               formatDenomination(centavos),
               style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w600, fontFeatures: kTabularFigures),
@@ -254,10 +253,7 @@ class _DenominationButton extends StatelessWidget {
             right: -4,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-              decoration: BoxDecoration(
-                color: context.colors.primary,
-                borderRadius: BorderRadius.circular(AppRadius.control),
-              ),
+              decoration: ShapeDecoration(color: context.colors.primary, shape: const StadiumBorder()),
               child: Text(
                 '×$count',
                 style: TextStyle(
@@ -290,15 +286,11 @@ class ChangeBreakdownChips extends StatelessWidget {
         for (final (centavos, count) in changeBreakdown(change))
           Container(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-            decoration: BoxDecoration(
-              color: context.colors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.control),
-              border: Border.all(color: tokens.hairline),
-            ),
+            decoration: ShapeDecoration(color: tokens.sunken, shape: const StadiumBorder()),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(isBill(centavos) ? Icons.payments_outlined : Icons.toll_outlined, size: 14, color: tokens.mutedText),
+                Icon(isBill(centavos) ? CupertinoIcons.rectangle : CupertinoIcons.circle, size: 14, color: tokens.mutedText),
                 const SizedBox(width: AppSpacing.xs),
                 Text(
                   '$count × ${formatDenomination(centavos)}',

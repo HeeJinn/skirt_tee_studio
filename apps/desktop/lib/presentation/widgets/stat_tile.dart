@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:shop_core/core/theme/app_theme.dart';
 
-/// Label + big sans figure (+ optional caption). Tonal surface, no border —
-/// stats are read, not clicked, so they don't wear the interactive chrome.
+/// A figure on a card, as the Health and Fitness summaries set one: a
+/// quiet label, the figure large beneath it, and an optional caption. No
+/// border or shadow — stats are read, not clicked.
 class StatTile extends StatelessWidget {
   const StatTile({super.key, required this.label, required this.value, this.caption});
 
@@ -14,16 +15,16 @@ class StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 14, AppSpacing.lg, 14),
-      decoration: BoxDecoration(
-        color: context.tokens.sunken,
-        borderRadius: BorderRadius.circular(AppRadius.container),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg + 2, 14, AppSpacing.lg + 2, 16),
+      decoration: ShapeDecoration(
+        color: context.colors.surface,
+        shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(AppRadius.container)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label.toUpperCase(), style: context.text.labelSmall),
-          const SizedBox(height: 6),
+          Text(label, style: context.text.labelSmall),
+          const SizedBox(height: 4),
           Text(value, style: context.text.headlineMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
           if (caption != null) ...[
             const SizedBox(height: 2),

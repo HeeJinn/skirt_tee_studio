@@ -8,6 +8,13 @@ abstract class SettingsRepository {
   Future<int> getLowStockThreshold();
   Future<void> setLowStockThreshold(int value);
 
+  /// What the shop starts with, until the owners add their own.
+  static const defaultCategories = ['T-Shirt', 'Long Sleeves', 'Skirt', 'Shorts', 'Blouse', 'Kids'];
+
+  /// Shop-wide and synced; [defaultCategories] until the owners save a list.
+  Future<List<String>> getCategories();
+  Future<void> setCategories(List<String> categories);
+
   /// Null when never chosen — the presentation layer owns the preset list
   /// and its default.
   Future<String?> getThemePresetId();

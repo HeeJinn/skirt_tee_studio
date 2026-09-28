@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +12,7 @@ import '../../viewmodels/inventory_view_model.dart';
 import '../../viewmodels/sales_view_model.dart';
 import '../../viewmodels/session_view_model.dart';
 import '../../widgets/filter_bar.dart';
+import '../../widgets/ios_alert.dart';
 import '../../widgets/list_surface.dart';
 import '../../widgets/screen_header.dart';
 import '../../widgets/stat_tile.dart';
@@ -85,8 +87,8 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
             actions: [
               OutlinedButton.icon(
                 onPressed: sales.isEmpty ? null : () => _exportCsv(sales),
-                icon: const Icon(Icons.file_download_outlined, size: 18),
-                label: const Text('EXPORT'),
+                icon: const Icon(CupertinoIcons.square_arrow_down, size: 18),
+                label: const Text('Export'),
               ),
             ],
           ),
@@ -99,7 +101,7 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                 width: 204,
                 initialSelection: _method,
                 requestFocusOnTap: false,
-                leadingIcon: const Icon(Icons.payments_outlined, size: 18),
+                leadingIcon: const Icon(CupertinoIcons.line_horizontal_3_decrease, size: 18),
                 onSelected: (m) => setState(() => _method = m),
                 dropdownMenuEntries: [
                   const DropdownMenuEntry(value: null, label: 'All payments'),
@@ -108,7 +110,7 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
               ),
               const SizedBox(width: AppSpacing.lg),
               Expanded(
-                child: ChoiceStrip<ReportRange>(
+                child: SegmentedStrip<ReportRange>(
                   options: [for (final r in ReportRange.values) (r, r.label)],
                   selected: _range,
                   onSelected: (r) => setState(() => _range = r),
@@ -137,7 +139,7 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
           Expanded(
             child: days.isEmpty
                 ? EmptyState(
-                    icon: Icons.receipt_long_outlined,
+                    icon: CupertinoIcons.doc_text,
                     message: all.isEmpty ? 'No sales yet' : 'No sales match these filters',
                   )
                 : ListView(
@@ -177,18 +179,18 @@ class _SaleRowState extends State<_SaleRow> {
     final count = widget.sale.totalItemsSold;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('VOID SALE'),
+      builder: (dialogContext) => IosAlert(
+        title: const Text('Void Sale'),
         content: Text(
           'Remove this ${_peso.format(widget.sale.totalAmount)} sale and return '
           '$count item${count == 1 ? '' : 's'} to stock? This can\'t be undone.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: dialogContext.tokens.danger),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('VOID SALE'),
+            child: const Text('Void Sale'),
           ),
         ],
       ),
@@ -244,7 +246,7 @@ class _SaleRowState extends State<_SaleRow> {
                 AnimatedRotation(
                   turns: _expanded ? 0.5 : 0,
                   duration: const Duration(milliseconds: 180),
-                  child: Icon(Icons.expand_more, size: 20, color: tokens.mutedText),
+                  child: Icon(CupertinoIcons.chevron_down, size: 20, color: tokens.mutedText),
                 ),
               ],
             ),
@@ -304,7 +306,7 @@ class _SaleRowState extends State<_SaleRow> {
                         child: TextButton.icon(
                           onPressed: _confirmVoid,
                           style: TextButton.styleFrom(foregroundColor: tokens.danger),
-                          icon: const Icon(Icons.undo, size: 16),
+                          icon: const Icon(CupertinoIcons.arrow_uturn_left, size: 16),
                           label: const Text('Void sale'),
                         ),
                       ),

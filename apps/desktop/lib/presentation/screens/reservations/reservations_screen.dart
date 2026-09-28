@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +11,7 @@ import '../../viewmodels/reservation_view_model.dart';
 import '../../viewmodels/sales_view_model.dart';
 import '../../viewmodels/session_view_model.dart';
 import '../../widgets/app_snackbar.dart';
+import '../../widgets/ios_alert.dart';
 import '../../widgets/filter_bar.dart';
 import '../../widgets/list_surface.dart';
 import '../../widgets/payment_icon.dart';
@@ -61,15 +63,15 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
   Future<void> _confirmCancel(Reservation reservation) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('CANCEL RESERVATION'),
+      builder: (dialogContext) => IosAlert(
+        title: const Text('Cancel Reservation'),
         content: Text('Remove ${reservation.customerName}\'s reservation for ${reservation.itemName}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('KEEP IT')),
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Keep It')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: dialogContext.tokens.danger),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('CANCEL RESERVATION'),
+            child: const Text('Cancel Reservation'),
           ),
         ],
       ),
@@ -105,13 +107,13 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
             actions: [
               ElevatedButton.icon(
                 onPressed: _openAddDialog,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('ADD RESERVATION'),
+                icon: const Icon(CupertinoIcons.add, size: 18),
+                label: const Text('Add Reservation'),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          ChoiceStrip<ReservationStatus?>(
+          SegmentedStrip<ReservationStatus?>(
             options: const [
               (ReservationStatus.pending, 'Pending'),
               (ReservationStatus.pickedUp, 'Picked up'),
@@ -123,7 +125,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
           const SizedBox(height: AppSpacing.sm),
           Expanded(
             child: groups.isEmpty
-                ? const EmptyState(icon: Icons.event_available_outlined, message: 'No reservations here')
+                ? const EmptyState(icon: CupertinoIcons.calendar, message: 'No reservations here')
                 : ListView(
                     padding: const EdgeInsets.only(bottom: 24),
                     children: [
@@ -183,7 +185,7 @@ class _ReservationRowState extends State<_ReservationRow> {
     final method = await showDialog<PaymentMethod>(
       context: context,
       builder: (dialogContext) => SimpleDialog(
-        title: Text('PAID BY · ${widget.reservation.customerName}'),
+        title: Text('Paid by · ${widget.reservation.customerName}'),
         children: [
           for (final m in PaymentMethod.selectable)
             SimpleDialogOption(
@@ -209,7 +211,7 @@ class _ReservationRowState extends State<_ReservationRow> {
       // the pickup can't go through.
       final item = inventory.items.where((i) => i.id == widget.reservation.itemId).firstOrNull;
       if (item != null) {
-        received = await showCashTenderDialog(context, total: item.unitPrice, confirmLabel: 'COMPLETE PICKUP');
+        received = await showCashTenderDialog(context, total: item.sellingPrice, confirmLabel: 'Complete Pickup');
         if (received == null || !mounted) return;
       }
     }
@@ -242,10 +244,10 @@ class _ReservationRowState extends State<_ReservationRow> {
     final pending = r.status == ReservationStatus.pending;
 
     final (pillLabel, pillTone) = switch (widget.bucket) {
-      ReservationBucket.overdue => (relativePickupLabel(r.pickupDate, widget.now).toUpperCase(), PillTone.danger),
-      ReservationBucket.today => ('TODAY', PillTone.warning),
-      ReservationBucket.upcoming => (relativePickupLabel(r.pickupDate, widget.now).toUpperCase(), PillTone.neutral),
-      ReservationBucket.pickedUp => ('PICKED UP', PillTone.success),
+      ReservationBucket.overdue => (relativePickupLabel(r.pickupDate, widget.now), PillTone.danger),
+      ReservationBucket.today => ('Today', PillTone.warning),
+      ReservationBucket.upcoming => (relativePickupLabel(r.pickupDate, widget.now), PillTone.neutral),
+      ReservationBucket.pickedUp => ('Picked up', PillTone.success),
     };
 
     return Padding(
@@ -270,20 +272,20 @@ class _ReservationRowState extends State<_ReservationRow> {
             SizedBox(
               width: 152,
               height: 36,
-              child: ElevatedButton(
+              child: OutlinedButton(
                 onPressed: _processing ? null : _markPickedUp,
-                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12)),
+                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12)),
                 child: _processing
                     ? SizedBox.square(
                         dimension: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: tokens.mutedText),
+                        child: const CircularProgressIndicator.adaptive(strokeWidth: 2),
                       )
-                    : const Text('MARK PICKED UP'),
+                    : const Text('Mark Picked Up'),
               ),
             ),
           PopupMenuButton<VoidCallback>(
             tooltip: 'More actions',
-            icon: Icon(Icons.more_horiz, color: tokens.mutedText),
+            icon: Icon(CupertinoIcons.ellipsis, color: tokens.mutedText),
             enabled: !_processing,
             onSelected: (action) => action(),
             itemBuilder: (context) => [

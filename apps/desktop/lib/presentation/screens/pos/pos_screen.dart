@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -14,12 +15,12 @@ import '../../viewmodels/sales_view_model.dart';
 import '../../viewmodels/session_view_model.dart';
 import '../../viewmodels/settings_view_model.dart';
 import '../../widgets/payment_icon.dart';
+import '../../widgets/sale_price.dart';
 import '../../widgets/success_check.dart';
 import '../../widgets/filter_bar.dart';
 import '../../widgets/item_thumbnail.dart';
 import '../../widgets/list_surface.dart';
 import '../../widgets/screen_header.dart';
-import '../../widgets/status_pill.dart';
 import 'cash_tender_dialog.dart';
 import 'tender.dart';
 
@@ -124,7 +125,12 @@ class _PosScreenState extends State<PosScreen> {
                     Expanded(
                       flex: 3,
                       child: ChoiceStrip<String?>(
-                        options: [(null, 'All'), for (final c in kCategories) (c, c)],
+                        // Only categories with something to sell.
+                        options: [
+                          (null, 'All'),
+                          for (final c in categoryOptions(context.watch<SettingsViewModel>().categories, inventory))
+                            if (inventory.any((i) => i.category == c)) (c, c),
+                        ],
                         selected: _categoryFilter,
                         onSelected: (c) => setState(() => _categoryFilter = c),
                       ),
@@ -134,7 +140,7 @@ class _PosScreenState extends State<PosScreen> {
                 const SizedBox(height: 20),
                 Expanded(
                   child: items.isEmpty
-                      ? const EmptyState(icon: Icons.search_off, message: 'No items match this search')
+                      ? const EmptyState(icon: CupertinoIcons.search, message: 'No items match this search')
                       : GridView.builder(
                           padding: const EdgeInsets.only(bottom: 24),
                           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -206,7 +212,6 @@ class _ItemTileState extends State<_ItemTile> {
     final disabled = widget.onTap == null;
     if (widget.inCart > 0) _badgeQty = widget.inCart;
     final tokens = context.tokens;
-    final ink = context.colors.onSurface;
 
     final (stockLabel, stockColor) = switch (item) {
       _ when item.qtyOnHand <= 0 => ('Sold out', tokens.danger),
@@ -215,6 +220,10 @@ class _ItemTileState extends State<_ItemTile> {
       _ => ('${widget.available} left', tokens.mutedText),
     };
 
+    // A product card as the Apple Store app sets one: the photo flush at
+    // the top, name and price beneath, on the card color with no border.
+    // Hovering lifts it a touch; pressing sinks it.
+    final shape = RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(AppRadius.container));
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
@@ -227,13 +236,16 @@ class _ItemTileState extends State<_ItemTile> {
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOut,
           clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
+          decoration: ShapeDecoration(
             color: context.colors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.container),
-            border: Border.all(color: _hovered && !disabled ? ink : tokens.hairline),
-            boxShadow: _hovered && !disabled
-                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 14, offset: const Offset(0, 4))]
-                : const [],
+            shape: shape,
+            shadows: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: _hovered && !disabled ? 0.12 : 0.0),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: Material(
             color: Colors.transparent,
@@ -243,7 +255,7 @@ class _ItemTileState extends State<_ItemTile> {
               onTapCancel: () => setState(() => _pressed = false),
               onTapUp: (_) => setState(() => _pressed = false),
               child: Opacity(
-                opacity: disabled ? 0.5 : 1,
+                opacity: disabled ? 0.45 : 1,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -252,8 +264,7 @@ class _ItemTileState extends State<_ItemTile> {
                         fit: StackFit.expand,
                         children: [
                           ItemThumbnail(imagePath: item.imagePath, name: item.name, radius: 0),
-                          if (item.isBargain)
-                            const Positioned(top: 8, left: 8, child: StatusPill(label: 'SALE', tone: PillTone.accent)),
+                          if (item.onSale) Positioned(top: 8, left: 8, child: SalePill(item: item)),
                           Positioned(
                             top: 8,
                             right: 8,
@@ -273,7 +284,7 @@ class _ItemTileState extends State<_ItemTile> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SizedBox(
-                            height: 36,
+                            height: 40,
                             child: Text(
                               item.name,
                               style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w600, height: 1.3),
@@ -281,25 +292,28 @@ class _ItemTileState extends State<_ItemTile> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                _peso.format(item.unitPrice),
-                                style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                              // The price keeps its size unless the card is
+                              // too narrow for it and the stock line.
+                              Flexible(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: SalePriceText(
+                                    item: item,
+                                    style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                ),
                               ),
                               const SizedBox(width: AppSpacing.sm),
-                              Expanded(
-                                child: Text(
-                                  stockLabel,
-                                  textAlign: TextAlign.right,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: context.text.bodySmall?.copyWith(
-                                    color: stockColor,
-                                    fontWeight: stockColor == tokens.mutedText ? FontWeight.w400 : FontWeight.w600,
-                                  ),
+                              Text(
+                                stockLabel,
+                                style: context.text.bodySmall?.copyWith(
+                                  color: stockColor,
+                                  fontWeight: stockColor == tokens.mutedText ? FontWeight.w400 : FontWeight.w600,
                                 ),
                               ),
                             ],
@@ -326,16 +340,13 @@ class _InCartBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: context.colors.primary,
-        borderRadius: BorderRadius.circular(AppRadius.control),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: ShapeDecoration(color: context.colors.primary, shape: const StadiumBorder()),
       child: Text(
         '×$qty',
         style: TextStyle(
           fontFamily: kSansFont,
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: FontWeight.w700,
           color: context.colors.onPrimary,
           fontFeatures: kTabularFigures,
@@ -352,6 +363,10 @@ extension on _SoldSummary {
   bool get hasChange => (change ?? 0) > 0;
 }
 
+/// The sale being rung up, docked on the right as iPadOS docks an
+/// inspector: its own rounded pane inset from the window's edges, the
+/// lines scrolling in the middle, and the total and tenders held at the
+/// foot within reach.
 class _CartPanel extends StatelessWidget {
   const _CartPanel({required this.onCompleteSale, required this.justSold, required this.onDismissJustSold});
   final ValueChanged<PaymentMethod> onCompleteSale;
@@ -365,30 +380,33 @@ class _CartPanel extends StatelessWidget {
     final count = cart.itemCount;
 
     return Container(
-      width: 380,
-      decoration: BoxDecoration(
-        color: tokens.sunken,
-        border: Border(left: BorderSide(color: tokens.hairline)),
+      width: 372,
+      margin: const EdgeInsets.fromLTRB(0, AppSpacing.sm, AppSpacing.sm, AppSpacing.sm),
+      decoration: ShapeDecoration(
+        color: context.colors.surface,
+        shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(AppRadius.sheet)),
       ),
-      padding: const EdgeInsets.fromLTRB(24, 38, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 30, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text('CURRENT SALE', style: context.text.titleSmall),
-              const Spacer(),
-              if (!cart.isEmpty)
-                TextButton(
-                  onPressed: cart.clear,
-                  style: TextButton.styleFrom(foregroundColor: tokens.mutedText, minimumSize: const Size(0, 32)),
-                  child: const Text('Clear'),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Current sale', style: context.text.titleLarge),
+                    Text(
+                      count == 0 ? 'No items yet' : '$count item${count == 1 ? '' : 's'}',
+                      style: context.text.bodySmall,
+                    ),
+                  ],
                 ),
+              ),
+              if (!cart.isEmpty) TextButton(onPressed: cart.clear, child: const Text('Clear')),
             ],
-          ),
-          Text(
-            count == 0 ? 'No items yet' : '$count item${count == 1 ? '' : 's'}',
-            style: context.text.bodySmall,
           ),
           const SizedBox(height: AppSpacing.md),
           const Divider(),
@@ -397,7 +415,11 @@ class _CartPanel extends StatelessWidget {
                 ? AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
                     child: justSold == null
-                        ? const EmptyState(icon: Icons.shopping_bag_outlined, message: 'Tap an item to start a sale')
+                        ? const EmptyState(
+                            icon: CupertinoIcons.bag,
+                            title: 'No Items',
+                            message: 'Tap an item to start a sale',
+                          )
                         : _SaleCompleteView(key: ValueKey(justSold), sold: justSold!, onDone: onDismissJustSold),
                   )
                 : ListView.separated(
@@ -420,7 +442,7 @@ class _CartPanel extends StatelessWidget {
                 child: Text(
                   _peso.format(cart.total),
                   key: ValueKey(cart.total),
-                  style: context.text.displaySmall,
+                  style: context.text.displaySmall?.copyWith(fontFeatures: kTabularFigures),
                 ),
               ),
             ],
@@ -428,38 +450,33 @@ class _CartPanel extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           // One button per tender instead of "complete" + a default: the
           // method is always a deliberate choice, and it's still one click.
-          Text('COMPLETE SALE · PAID BY', style: context.text.labelSmall),
+          Text('Complete sale · paid by', style: context.text.labelSmall),
           const SizedBox(height: AppSpacing.sm),
           for (var row = 0; row < PaymentMethod.selectable.length; row += 2) ...[
             if (row > 0) const SizedBox(height: AppSpacing.sm),
             SizedBox(
-              height: 52,
+              height: 50,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   for (final (i, method) in PaymentMethod.selectable.skip(row).take(2).indexed) ...[
                     if (i > 0) const SizedBox(width: AppSpacing.sm),
                     Expanded(
-                      // Cash is the everyday tender, so it alone is solid;
-                      // the rest are outlined — same one click, less weight.
+                      // Cash is the everyday tender, so it alone is the
+                      // accent capsule; the rest are grey — same one click,
+                      // less weight.
                       child: method == PaymentMethod.cash
                           ? ElevatedButton.icon(
                               onPressed: cart.isEmpty ? null : () => onCompleteSale(method),
-                              style: ElevatedButton.styleFrom(
-                                textStyle: context.text.labelLarge?.copyWith(fontSize: 15, letterSpacing: 1.2),
-                              ),
+                              style: ElevatedButton.styleFrom(textStyle: context.text.titleMedium),
                               icon: Icon(paymentIcon(method), size: 20),
-                              label: Text(method.label.toUpperCase()),
+                              label: Text(method.label),
                             )
                           : OutlinedButton.icon(
                               onPressed: cart.isEmpty ? null : () => onCompleteSale(method),
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: context.colors.surface,
-                                side: BorderSide(color: context.colors.onSurface),
-                                textStyle: context.text.labelLarge?.copyWith(fontSize: 15, letterSpacing: 1.2),
-                              ),
+                              style: OutlinedButton.styleFrom(textStyle: context.text.titleMedium),
                               icon: Icon(paymentIcon(method), size: 20),
-                              label: Text(method.label.toUpperCase()),
+                              label: Text(method.label),
                             ),
                     ),
                   ],
@@ -497,7 +514,7 @@ class _CartLineRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
-                Text('${_peso.format(line.item.unitPrice)} each', style: context.text.bodySmall),
+                SalePriceText(item: line.item, suffix: ' each', style: context.text.bodySmall),
               ],
             ),
           ),
@@ -521,6 +538,7 @@ class _CartLineRow extends StatelessWidget {
   }
 }
 
+/// An iOS stepper: − and + in one grey capsule, the count between them.
 class _QtyStepper extends StatelessWidget {
   const _QtyStepper({required this.qty, required this.onDecrement, required this.onIncrement});
 
@@ -534,21 +552,17 @@ class _QtyStepper extends StatelessWidget {
           icon: Icon(icon, size: 16),
           tooltip: tooltip,
           onPressed: onPressed,
-          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          constraints: const BoxConstraints.tightFor(width: 34, height: 32),
           padding: EdgeInsets.zero,
           color: context.colors.onSurface,
         );
 
     return Container(
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.control),
-        border: Border.all(color: context.tokens.hairline),
-      ),
+      decoration: ShapeDecoration(color: context.tokens.sunken, shape: const StadiumBorder()),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          step(Icons.remove, onDecrement, 'Remove one'),
+          step(CupertinoIcons.minus, onDecrement, 'Remove one'),
           SizedBox(
             width: 24,
             child: Text(
@@ -557,13 +571,12 @@ class _QtyStepper extends StatelessWidget {
               style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w600, fontFeatures: kTabularFigures),
             ),
           ),
-          step(Icons.add, onIncrement, 'Add one'),
+          step(CupertinoIcons.add, onIncrement, 'Add one'),
         ],
       ),
     );
   }
 }
-
 
 /// Success state in the empty cart panel. With change due, the change is the
 /// headline — big, with the bills and coins to pull — since that's what the
@@ -578,7 +591,7 @@ class _SaleCompleteView extends StatelessWidget {
     final tokens = context.tokens;
     final summary = Text(
       '${_peso.format(sold.total)} · ${sold.method.label}',
-      style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+      style: context.text.bodyMedium?.copyWith(color: tokens.mutedText),
     );
 
     if (!sold.hasChange) {
@@ -588,7 +601,7 @@ class _SaleCompleteView extends StatelessWidget {
           children: [
             const SuccessCheck(),
             const SizedBox(height: AppSpacing.md),
-            Text('Sale complete', style: context.text.titleMedium),
+            Text('Sale complete', style: context.text.titleLarge),
             summary,
           ],
         ),
@@ -604,20 +617,19 @@ class _SaleCompleteView extends StatelessWidget {
           children: [
             const Center(child: SuccessCheck(size: 64)),
             const SizedBox(height: AppSpacing.sm),
-            Center(child: Text('Sale complete', style: context.text.titleMedium)),
+            Center(child: Text('Sale complete', style: context.text.titleLarge)),
             Center(child: summary),
             const SizedBox(height: AppSpacing.lg),
             Container(
               padding: const EdgeInsets.all(AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: context.colors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.container),
-                border: Border.all(color: tokens.hairline),
+              decoration: ShapeDecoration(
+                color: tokens.sunken,
+                shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(AppRadius.container - 4)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('CHANGE DUE', style: context.text.labelSmall),
+                  Text('Change due', style: context.text.labelSmall),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     _peso.format(sold.change),
@@ -630,13 +642,7 @@ class _SaleCompleteView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            Center(
-              child: TextButton(
-                onPressed: onDone,
-                style: TextButton.styleFrom(foregroundColor: tokens.mutedText),
-                child: const Text('Done'),
-              ),
-            ),
+            Center(child: TextButton(onPressed: onDone, child: const Text('Done'))),
           ],
         ),
       ),

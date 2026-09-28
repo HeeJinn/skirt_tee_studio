@@ -1,4 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -64,7 +65,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             subtitle: '${_range.description} · ${summary.saleCount} sales',
           ),
           const SizedBox(height: 20),
-          ChoiceStrip<ReportRange>(
+          SegmentedStrip<ReportRange>(
             // No "Today": a one-day trend is a single bar — Sales covers today.
             options: [
               for (final r in ReportRange.values)
@@ -77,7 +78,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           Expanded(
             child: sales.isEmpty
                 ? const EmptyState(
-                    icon: Icons.bar_chart_outlined,
+                    icon: CupertinoIcons.chart_bar,
                     message: 'No sales in this range',
                   )
                 : SingleChildScrollView(
@@ -107,7 +108,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         _ReportCard(
-                          title: 'REVENUE TREND',
+                          title: 'Revenue trend',
                           caption: 'Daily revenue',
                           child: _RevenueColumns(
                             days: dailyRevenue(sales, _range, now),
@@ -121,7 +122,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             children: [
                               Expanded(
                                 child: _ReportCard(
-                                  title: 'TOP SELLERS',
+                                  title: 'Top sellers',
                                   caption: 'By units sold',
                                   child: _RankedBars(
                                     entries: [
@@ -138,7 +139,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               const SizedBox(width: AppSpacing.lg),
                               Expanded(
                                 child: _ReportCard(
-                                  title: 'REVENUE BY CATEGORY',
+                                  title: 'Revenue by category',
                                   caption: 'Share of revenue',
                                   child: _RankedBars(
                                     entries: [
@@ -187,7 +188,6 @@ class _ReportCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.container),
-        border: Border.all(color: context.tokens.hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

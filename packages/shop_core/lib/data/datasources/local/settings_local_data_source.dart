@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:sqlite_async/sqlite_async.dart';
 
 import 'sql_helpers.dart';
@@ -7,6 +9,10 @@ abstract class SettingsLocalDataSource {
   Future<int?> getLowStockThreshold();
   Future<void> setLowStockThreshold(int value);
 
+  /// The shop's item categories, in the owners' order. Null when never saved.
+  Future<List<String>?> getCategories();
+  Future<void> setCategories(List<String> categories);
+
   Future<String?> getThemePresetId();
   Future<void> setThemePresetId(String id);
 
@@ -15,7 +21,7 @@ abstract class SettingsLocalDataSource {
   Future<void> setAppearanceMode(String mode);
 }
 
-/// The low-stock threshold is shop-wide and syncs; the theme and light/dark
+/// The low-stock threshold and categories are shop-wide and sync; the theme and light/dark
 /// choice belong to this PC and stay on it.
 class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
   SettingsLocalDataSourceImpl(this._db);
@@ -25,6 +31,7 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
   static const _deviceTable = 'device_settings';
 
   static const _lowStockKey = 'lowStockThreshold';
+  static const _categoriesKey = 'categories';
   static const _themePresetKey = 'themePreset';
   static const _appearanceModeKey = 'appearanceMode';
 
@@ -45,6 +52,17 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
 
   @override
   Future<void> setLowStockThreshold(int value) => _set(_shopTable, _lowStockKey, '$value');
+
+  @override
+  Future<List<String>?> getCategories() async {
+    final value = await _get(_shopTable, _categoriesKey);
+    if (value == null) return null;
+    final decoded = jsonDecode(value);
+    return decoded is List ? decoded.whereType<String>().toList() : null;
+  }
+
+  @override
+  Future<void> setCategories(List<String> categories) => _set(_shopTable, _categoriesKey, jsonEncode(categories));
 
   @override
   Future<String?> getThemePresetId() => _get(_deviceTable, _themePresetKey);

@@ -51,20 +51,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('REVENUE TREND'), findsOneWidget);
-    expect(find.text('TOP SELLERS'), findsOneWidget);
-    expect(find.text('REVENUE BY CATEGORY'), findsOneWidget);
+    expect(find.text('Revenue trend'), findsOneWidget);
+    expect(find.text('Top sellers'), findsOneWidget);
+    expect(find.text('Revenue by category'), findsOneWidget);
   });
 
   testWidgets('switching date range chips does not throw', (tester) async {
     await tester.pumpWidget(_buildApp(withSales: true));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('7 DAYS'));
+    await tester.tap(find.text('7 days'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
 
-    await tester.tap(find.text('ALL TIME'));
+    await tester.tap(find.text('All time'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
@@ -75,6 +75,6 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('No sales in this range'), findsOneWidget);
-    expect(find.text('REVENUE TREND'), findsNothing);
+    expect(find.text('Revenue trend'), findsNothing);
   });
 }

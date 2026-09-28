@@ -290,6 +290,60 @@ void main() {
     });
   });
 
+  group('shopMoney', () {
+    StockLot lot(double cost, PaidFrom paidFrom) =>
+        StockLot(id: 'lot-$cost', at: sep1, supplier: '', itemsCost: cost, paidFrom: paidFrom);
+
+    test('money left = put in + sales − shop-paid expenses and stock − taken home', () {
+      final money = shopMoney(
+        sales: [
+          Sale(
+            id: 'cash',
+            dateTime: sep20,
+            paymentMethod: PaymentMethod.cash,
+            lineItems: const [SaleLineItem(itemId: 'tee', itemName: 'Tee', unitPrice: 150, qty: 10)],
+          ),
+          Sale(
+            id: 'gcash',
+            dateTime: sep20,
+            paymentMethod: PaymentMethod.gcash,
+            lineItems: const [SaleLineItem(itemId: 'tee', itemName: 'Tee', unitPrice: 150, qty: 2)],
+          ),
+        ],
+        entries: [
+          entry(MoneyEntryKind.capitalIn, 10000),
+          entry(MoneyEntryKind.expense, 3000, category: ExpenseCategory.rent),
+          entry(MoneyEntryKind.ownerDraw, 500),
+          // Paid from the owners' own pockets: never passed through the shop.
+          entry(MoneyEntryKind.expense, 800, paidFrom: PaidFrom.owners),
+        ],
+        lots: [lot(4000, PaidFrom.shop), lot(6000, PaidFrom.owners)],
+        booksStartedAt: sep1,
+      );
+
+      expect(money.cameIn, 10000 + 1800);
+      expect(money.cashSales, 1500);
+      expect(money.wentOut, 3000 + 4000 + 500);
+      expect(money.left, 11800 - 7500);
+    });
+
+    test('ignores sales from before the books started', () {
+      final money = shopMoney(
+        sales: [sale(DateTime(2026, 8, 30), const [SaleLineItem(itemId: 't', itemName: 'T', unitPrice: 100, qty: 1)])],
+        entries: const [],
+        lots: const [],
+        booksStartedAt: sep1,
+      );
+      expect(money.sales, 0);
+      expect(money.left, 0);
+    });
+
+    test('goes below zero when more went out than was recorded coming in', () {
+      final money = shopMoney(sales: const [], entries: const [], lots: [lot(4000, PaidFrom.shop)]);
+      expect(money.left, -4000);
+    });
+  });
+
   test('stockValueAtCost values the shelf at cost, unknown cost as ₱0', () {
     expect(
       stockValueAtCost(const [

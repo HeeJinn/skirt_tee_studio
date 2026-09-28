@@ -161,7 +161,11 @@ class _ItemCard extends StatelessWidget {
           ),
           const SizedBox(height: Space.xxs),
           Text(
-            vm.isSoldOut(item) ? peso.format(item.unitPrice) : '${peso.format(item.unitPrice)} · ${item.qtyOnHand} on hand',
+            [
+              peso.format(item.sellingPrice),
+              if (item.isMarkedDown) 'sale',
+              if (!vm.isSoldOut(item)) '${item.qtyOnHand} on hand',
+            ].join(' · '),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: ShopType.footnote(context).copyWith(fontFeatures: ShopType.tabular),

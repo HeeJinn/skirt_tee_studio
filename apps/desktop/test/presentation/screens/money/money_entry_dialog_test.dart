@@ -35,9 +35,9 @@ void main() {
       const MoneyEntryDialog(kind: MoneyEntryKind.expense, ownerNames: ['Ana', 'Ben']),
     );
 
-    expect(find.text('WHOSE MONEY'), findsNothing);
+    expect(find.text('Whose money'), findsNothing);
     await tester.enterText(_field('Amount (₱)'), '8,000');
-    await tester.tap(find.text('SAVE'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     final entry = result()!;
@@ -60,7 +60,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Also counts toward what you\'ve put into the shop.'), findsOneWidget);
     await tester.tap(find.text('Ben'));
-    await tester.tap(find.text('SAVE'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     expect(result()!.person, 'Ben');
@@ -74,9 +74,9 @@ void main() {
     );
 
     expect(find.text('What for'), findsNothing);
-    expect(find.text('TAKEN BY'), findsOneWidget);
+    expect(find.text('Taken by'), findsOneWidget);
     await tester.enterText(_field('Amount (₱)'), '5000');
-    await tester.tap(find.text('SAVE'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     expect(result()!.kind, MoneyEntryKind.ownerDraw);
@@ -88,7 +88,7 @@ void main() {
     final result = await _open(tester, const MoneyEntryDialog(kind: MoneyEntryKind.capitalIn, ownerNames: []));
 
     await tester.enterText(_field('Amount (₱)'), '0');
-    await tester.tap(find.text('SAVE'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     expect(find.text('Enter an amount'), findsOneWidget);
@@ -108,9 +108,9 @@ void main() {
       MoneyEntryDialog(kind: MoneyEntryKind.expense, ownerNames: const ['Ana', 'Ben'], entry: existing),
     );
 
-    expect(find.text('EDIT · MONEY PUT IN'), findsOneWidget);
+    expect(find.text('Edit Money Put In'), findsOneWidget);
     await tester.enterText(_field('Amount (₱)'), '60000');
-    await tester.tap(find.text('SAVE CHANGES'));
+    await tester.tap(find.text('Save Changes'));
     await tester.pumpAndSettle();
 
     expect(result()!.id, 'e1');

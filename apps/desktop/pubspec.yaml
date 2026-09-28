@@ -83,6 +83,20 @@ flutter:
 
   assets:
     - assets/lottie/
+    - assets/fonts/Inter-OFL.txt
+
+  # San Francisco's stand-in: Apple's font can't ship on Windows, and Inter
+  # is the closest free match (SIL Open Font License, see Inter-OFL.txt).
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -64,7 +64,7 @@ class _AdjustStockDialogState extends State<AdjustStockDialog> {
     final value = _qty * cost;
 
     return AlertDialog(
-      title: const Text('ADJUST STOCK'),
+      title: const Text('Adjust Stock'),
       content: SizedBox(
         width: 380,
         child: Form(
@@ -81,7 +81,7 @@ class _AdjustStockDialogState extends State<AdjustStockDialog> {
                 style: context.text.bodySmall,
               ),
               const SizedBox(height: AppSpacing.lg),
-              ChoiceStrip<bool>(
+              SegmentedStrip<bool>(
                 options: const [(false, 'Remove pieces'), (true, 'Found pieces')],
                 selected: _found,
                 onSelected: (v) => setState(() => _found = v),
@@ -131,8 +131,8 @@ class _AdjustStockDialogState extends State<AdjustStockDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CANCEL')),
-        ElevatedButton(onPressed: _submit, child: Text(_found ? 'ADD BACK' : 'REMOVE')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        ElevatedButton(onPressed: _submit, child: Text(_found ? 'Add Back' : 'Remove')),
       ],
     );
   }

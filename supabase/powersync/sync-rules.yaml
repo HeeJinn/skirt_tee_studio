@@ -14,7 +14,8 @@ streams:
     queries:
       - >-
         SELECT id, name, category, unit_price AS "unitPrice", qty_on_hand AS "qtyOnHand",
-          is_bargain AS "isBargain", image_key AS "imageKey", unit_cost AS "unitCost"
+          is_bargain AS "isBargain", sale_percent AS "salePercent", sale_price AS "salePrice",
+          image_key AS "imageKey", unit_cost AS "unitCost"
         FROM items
         WHERE shop_id IN (SELECT shop_id FROM shop_members WHERE user_id = auth.user_id())
       - >-

@@ -1,6 +1,7 @@
 // Visual QA harness — renders every screen (light + dark) to PNG with the
-// real Windows fonts, so UI changes can be reviewed as images rather than
-// inferred from code. Windows-only (reads fonts from C:\Windows\Fonts).
+// app's bundled Inter, so UI changes can be reviewed as images rather than
+// inferred from code. Windows-only (reads the icon fonts from the Flutter
+// SDK and the pub cache).
 //
 //   flutter test tool/ui_snapshots_test.dart
 //
@@ -14,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
 import 'package:shop_core/core/theme/app_theme.dart';
@@ -32,8 +34,11 @@ import 'package:skirt_tee_studio/presentation/viewmodels/session_view_model.dart
 import 'package:skirt_tee_studio/presentation/viewmodels/settings_view_model.dart';
 import 'package:shop_core/domain/entities/staff.dart';
 import 'package:skirt_tee_studio/presentation/screens/auth/sign_in_screen.dart';
+import 'package:skirt_tee_studio/presentation/screens/inventory/widgets/category_field.dart';
 
+import 'package:shop_core/testing/fake_cloud_sync_repository.dart';
 import 'package:shop_core/testing/fake_money_repository.dart';
+import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 import 'package:shop_core/testing/fake_reservation_repository.dart';
 import 'package:shop_core/testing/fake_sale_repository.dart';
 import 'package:shop_core/testing/fake_settings_repository.dart';
@@ -63,9 +68,9 @@ const _items = [
   Item(id: 'i4', name: 'Denim Mini Skirt', category: 'Skirt', unitPrice: 399, qtyOnHand: 0),
   Item(id: 'i5', name: 'Linen Shorts', category: 'Shorts', unitPrice: 299, qtyOnHand: 12, unitCost: 138),
   Item(id: 'i6', name: 'Floral Wrap Blouse', category: 'Blouse', unitPrice: 459, qtyOnHand: 5),
-  Item(id: 'i7', name: 'Ruffle Sleeve Blouse', category: 'Blouse', unitPrice: 129, qtyOnHand: 15, isBargain: true),
+  Item(id: 'i7', name: 'Ruffle Sleeve Blouse', category: 'Blouse', unitPrice: 129, qtyOnHand: 15, onSale: true, salePercent: 20),
   Item(id: 'i8', name: 'Kids Dino Tee', category: 'Kids', unitPrice: 149, qtyOnHand: 18, unitCost: 69),
-  Item(id: 'i9', name: 'Kids Tutu Skirt', category: 'Kids', unitPrice: 99, qtyOnHand: 2, isBargain: true),
+  Item(id: 'i9', name: 'Kids Tutu Skirt', category: 'Kids', unitPrice: 99, qtyOnHand: 2, onSale: true),
   Item(id: 'i10', name: 'Oversized Graphic Tee', category: 'T-Shirt', unitPrice: 279, qtyOnHand: 9),
 ];
 
@@ -220,6 +225,9 @@ Future<Widget> _buildApp(ThemeMode mode) async {
       ChangeNotifierProvider(create: (_) => SettingsViewModel(FakeSettingsRepository())),
       ChangeNotifierProvider.value(value: session),
       ChangeNotifierProvider.value(value: money),
+      ChangeNotifierProvider(
+        create: (_) => CloudSyncViewModel(FakeCloudSyncRepository(), onRemoteChanges: () async {})..load(),
+      ),
     ],
     child: RepaintBoundary(
       key: _boundaryKey,
@@ -255,16 +263,16 @@ Future<void> _snapNoSettle(WidgetTester tester, String name) async {
 void main() {
   setUpAll(() async {
     Directory(_outDir).createSync(recursive: true);
-    const fonts = r'C:\Windows\Fonts';
-    const segoe = ['$fonts\\segoeui.ttf', '$fonts\\seguisb.ttf', '$fonts\\segoeuib.ttf'];
-    await _loadFont('Segoe UI', segoe);
-    // Styles with no explicit family fall back to the OS default (Segoe UI)
-    // in the real app, but to the test engine's box font here — register
-    // Segoe UI under the test fallback name so the render matches reality.
-    await _loadFont('FlutterTest', segoe);
-    await _loadFont('Georgia', ['$fonts\\georgia.ttf', '$fonts\\georgiab.ttf']);
+    // Inter's four weights, as the app bundles them; also standing in for
+    // anything that still asks for the system font.
+    final inter = [for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold']) 'assets/fonts/Inter-$w.ttf'];
+    for (final family in ['Inter', 'CupertinoSystemText', 'CupertinoSystemDisplay', 'FlutterTest']) {
+      await _loadFont(family, inter);
+    }
     final flutterRoot = File(Platform.resolvedExecutable).parent.parent.parent.parent.parent.parent.path;
     await _loadFont('MaterialIcons', ['$flutterRoot\\bin\\cache\\artifacts\\material_fonts\\materialicons-regular.otf']);
+    final pubCache = p.join(Platform.environment['LOCALAPPDATA']!, 'Pub', 'Cache', 'hosted', 'pub.dev');
+    await _loadFont('packages/cupertino_icons/CupertinoIcons', [p.join(pubCache, 'cupertino_icons-1.0.9', 'assets', 'CupertinoIcons.ttf')]);
   });
 
   for (final mode in [ThemeMode.light, ThemeMode.dark]) {
@@ -279,11 +287,11 @@ void main() {
       await tester.pumpWidget(await _buildApp(mode));
       await _snap(tester, '1_pos_$suffix');
 
-      await tester.tap(find.text('CASH'));
+      await tester.tap(find.text('Cash'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('₱1,000.00'));
       await _snap(tester, '1a_cash_tender_$suffix');
-      await tester.tap(find.widgetWithText(ElevatedButton, 'COMPLETE SALE'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Complete Sale'));
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 150))); // lottie asset load
       await tester.pump(const Duration(milliseconds: 250));
       await _snapNoSettle(tester, '1b_sale_anim_mid_$suffix');
@@ -298,6 +306,7 @@ void main() {
         ('Reports', '5_reports'),
         ('Customers', '6_customers'),
         ('Staff', '8_staff'),
+        ('Settings', '11_settings'),
         ('Money', '7_money'),
       ]) {
         await tester.tap(find.text(label).first);
@@ -307,12 +316,12 @@ void main() {
       // The rest of the Money screen, and its entry dialog.
       await tester.drag(_verticalScroll, const Offset(0, -700));
       await _snap(tester, '7a_money_log_$suffix');
-      await tester.tap(find.text('RECORD EXPENSE'));
+      await tester.tap(find.text('Record Expense'));
       await tester.pumpAndSettle();
       await tester.enterText(find.widgetWithText(TextFormField, 'Amount (₱)'), '1,250');
       await tester.tap(find.text('Our own money'));
       await _snap(tester, '7b_expense_dialog_$suffix');
-      await tester.tap(find.text('CANCEL'));
+      await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       tester.view.physicalSize = const Size(1100, 640);
       await tester.drag(_verticalScroll, const Offset(0, 1400));
@@ -323,7 +332,7 @@ void main() {
       // Stock dialogs, opened over Inventory.
       await tester.tap(find.text('Inventory').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('RECEIVE STOCK'));
+      await tester.tap(find.text('Receive Stock'));
       await tester.pumpAndSettle();
       await tester.enterText(find.widgetWithText(TextFormField, 'Supplier or source'), 'Divisoria bale #14');
       await tester.enterText(find.widgetWithText(TextFormField, 'Price paid for the lot (₱)'), '8,000');
@@ -338,24 +347,50 @@ void main() {
       for (final (i, n) in ['30', '12', '10'].indexed) {
         await tester.enterText(qty.at(i), n);
       }
+      // A kind that isn't in inventory yet, from the quick line.
+      await tester.tap(find.byType(CategoryField));
+      await tester.pumpAndSettle();
+      await _snap(tester, '2a0_quick_category_menu_$suffix');
+      await tester.tap(find.text('Long Sleeves').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Sells for ₱'), '249');
+      await tester.enterText(find.widgetWithText(TextField, 'Pieces'), '8');
+      await tester.tap(find.text('Add'));
       await tester.tap(find.text('Our own money'));
       await _snap(tester, '2a_receive_stock_$suffix');
-      await tester.tap(find.text('CANCEL'));
+      await tester.drag(find.byType(SingleChildScrollView).last, const Offset(0, -600));
+      await _snap(tester, '2a1_receive_stock_bottom_$suffix');
+      await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Adjust stock').first);
       await tester.pumpAndSettle();
       await tester.enterText(find.widgetWithText(TextFormField, 'Pieces'), '2');
       await _snap(tester, '2b_adjust_stock_$suffix');
-      await tester.tap(find.text('CANCEL'));
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Add or remove categories'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'New category, e.g. Dress'), 'Dress');
+      await tester.tap(find.text('Add'));
+      await _snap(tester, '2e_categories_$suffix');
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ruffle Sleeve Blouse'));
+      await _snap(tester, '2f_item_on_sale_$suffix');
+      await tester.tap(find.text('Sale price'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextFormField, 'Sale price (₱)'), '99');
+      await _snap(tester, '2g_item_sale_price_$suffix');
+      await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
       // The smallest window the runner allows (win32_window.cpp, less the
       // frame) — the Inventory header carries the most actions of any screen.
       tester.view.physicalSize = const Size(1100, 640);
       await _snap(tester, '2c_inventory_min_window_$suffix');
-      await tester.tap(find.text('RECEIVE STOCK'));
+      await tester.tap(find.text('Receive Stock'));
       await _snap(tester, '2d_receive_stock_min_window_$suffix');
-      await tester.tap(find.text('CANCEL'));
+      await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       tester.view.physicalSize = const Size(1440, 900);
       await tester.pumpAndSettle();

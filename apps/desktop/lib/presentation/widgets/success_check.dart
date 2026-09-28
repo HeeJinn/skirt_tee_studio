@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
@@ -15,7 +16,7 @@ class SuccessCheck extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = context.tokens.success;
     if (MediaQuery.of(context).disableAnimations) {
-      return Icon(Icons.check_circle_outline, size: size, color: color);
+      return Icon(CupertinoIcons.checkmark_circle, size: size, color: color);
     }
     return Lottie.asset(
       'assets/lottie/success.json',

@@ -44,6 +44,33 @@ void main() {
     expect(all.single.isLowStock(5), isTrue);
   });
 
+  test('a sale is stored and read back; ending it clears the discount', () async {
+    const onSale = ItemModel(
+      id: '1',
+      name: 'Basic Tee',
+      category: 'T-Shirt',
+      unitPrice: 249,
+      qtyOnHand: 10,
+      onSale: true,
+      salePercent: 20,
+    );
+    await dataSource.insert(onSale);
+    expect((await dataSource.getAll()).single.sellingPrice, 199);
+
+    await dataSource.update(const ItemModel(
+      id: '1',
+      name: 'Basic Tee',
+      category: 'T-Shirt',
+      unitPrice: 249,
+      qtyOnHand: 10,
+      salePercent: 20, // left over from the form; not on sale, so not kept
+    ));
+    final ended = (await dataSource.getAll()).single;
+    expect(ended.onSale, isFalse);
+    expect(ended.salePercent, isNull);
+    expect(ended.sellingPrice, 249);
+  });
+
   test('a photo is stored by file name and read back as a path on this PC', () async {
     const withPhoto = ItemModel(
       id: '1',

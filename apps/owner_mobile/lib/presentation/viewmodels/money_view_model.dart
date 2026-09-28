@@ -77,6 +77,14 @@ class MoneyViewModel extends ChangeNotifier {
         booksStartedAt: _booksStart,
       );
 
+  /// The money the shop is holding, and how it got there.
+  ShopMoney get money => shopMoney(
+        sales: _salesList,
+        entries: _entries,
+        lots: _lots,
+        booksStartedAt: _booksStart,
+      );
+
   List<MonthlyProfit> get months => monthlyProfit(
         sales: _salesList,
         entries: _entries,

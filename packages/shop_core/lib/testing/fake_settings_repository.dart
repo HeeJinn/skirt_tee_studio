@@ -4,7 +4,14 @@ import '../domain/repositories/settings_repository.dart';
 class FakeSettingsRepository implements SettingsRepository {
   int? _lowStockThreshold;
   String? _themePresetId;
+  List<String>? _categories;
   AppearanceMode _appearanceMode = AppearanceMode.system;
+
+  @override
+  Future<List<String>> getCategories() async => _categories ?? SettingsRepository.defaultCategories;
+
+  @override
+  Future<void> setCategories(List<String> categories) async => _categories = List.of(categories);
 
   @override
   Future<int> getLowStockThreshold() async =>

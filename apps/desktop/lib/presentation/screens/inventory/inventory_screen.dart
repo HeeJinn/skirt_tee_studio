@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -16,12 +17,15 @@ import '../../viewmodels/inventory_view_model.dart';
 import '../../viewmodels/session_view_model.dart';
 import '../../viewmodels/settings_view_model.dart';
 import '../../widgets/app_snackbar.dart';
+import '../../widgets/ios_alert.dart';
 import '../../widgets/filter_bar.dart';
 import '../../widgets/item_thumbnail.dart';
 import '../../widgets/list_surface.dart';
+import '../../widgets/sale_price.dart';
 import '../../widgets/screen_header.dart';
 import '../../widgets/status_pill.dart';
 import 'widgets/adjust_stock_dialog.dart';
+import 'widgets/categories_dialog.dart';
 import 'widgets/item_form_dialog.dart';
 import 'widgets/low_stock_threshold_dialog.dart';
 import 'widgets/receive_stock_dialog.dart';
@@ -41,9 +45,21 @@ class _InventoryScreenState extends State<InventoryScreen> {
   String _search = '';
   String? _categoryFilter;
 
+  List<String> get _categories =>
+      categoryOptions(context.read<SettingsViewModel>().categories, context.read<InventoryViewModel>().items);
+
+  /// A category typed in with "New category…" joins the shop's list.
+  Future<void> _keepCategories(Iterable<Item> items) =>
+      context.read<SettingsViewModel>().addCategories(items.map((i) => i.category));
+
   Future<void> _openAddDialog() async {
-    final result = await showDialog<Item>(context: context, builder: (_) => const ItemFormDialog());
+    final result = await showDialog<Item>(
+      context: context,
+      builder: (_) => ItemFormDialog(categories: _categories),
+    );
     if (result != null && mounted) {
+      await _keepCategories([result]);
+      if (!mounted) return;
       await context.read<InventoryViewModel>().addItem(result);
       if (!mounted) return;
       await context
@@ -53,8 +69,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   Future<void> _openEditDialog(Item item) async {
-    final result = await showDialog<Item>(context: context, builder: (_) => ItemFormDialog(item: item));
+    final result = await showDialog<Item>(
+      context: context,
+      builder: (_) => ItemFormDialog(item: item, categories: _categories),
+    );
     if (result != null && mounted) {
+      await _keepCategories([result]);
+      if (!mounted) return;
       await context.read<InventoryViewModel>().updateItem(result);
       if (!mounted) return;
       String cost(double? c) => c == null ? 'none' : _peso.format(c);
@@ -62,6 +83,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
         if (result.unitPrice != item.unitPrice)
           'price ${_peso.format(item.unitPrice)} → ${_peso.format(result.unitPrice)}',
         if (result.unitCost != item.unitCost) 'cost ${cost(item.unitCost)} → ${cost(result.unitCost)}',
+        if (result.onSale != item.onSale || result.sellingPrice != item.sellingPrice)
+          result.onSale ? 'on sale at ${_peso.format(result.sellingPrice)}' : 'sale ended',
       ];
       await context
           .read<SessionViewModel>()
@@ -78,9 +101,15 @@ class _InventoryScreenState extends State<InventoryScreen> {
         .toList();
     final result = await showDialog<ReceivedLot>(
       context: context,
-      builder: (_) => ReceiveStockDialog(items: context.read<InventoryViewModel>().items, ownerNames: owners),
+      builder: (_) => ReceiveStockDialog(
+        items: context.read<InventoryViewModel>().items,
+        ownerNames: owners,
+        categories: _categories,
+      ),
     );
     if (result == null || !mounted) return;
+    await _keepCategories(result.newItems);
+    if (!mounted) return;
     try {
       await context.read<InventoryViewModel>().receiveLot(result.lot, result.lines, newItems: result.newItems);
     } on StockChangeException catch (e) {
@@ -121,15 +150,15 @@ class _InventoryScreenState extends State<InventoryScreen> {
         : '';
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('DELETE ITEM'),
+      builder: (dialogContext) => IosAlert(
+        title: const Text('Delete Item'),
         content: Text('Remove "${item.name}" from inventory? Past sales keep their record of it.$loss'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: dialogContext.tokens.danger),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('DELETE'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -157,20 +186,44 @@ class _InventoryScreenState extends State<InventoryScreen> {
     }
   }
 
+  Future<void> _openCategoriesDialog() async {
+    final settings = context.read<SettingsViewModel>();
+    final itemCounts = <String, int>{};
+    for (final item in context.read<InventoryViewModel>().items) {
+      itemCounts.update(item.category, (v) => v + 1, ifAbsent: () => 1);
+    }
+    final before = _categories;
+    final result = await showDialog<List<String>>(
+      context: context,
+      builder: (_) => CategoriesDialog(categories: before, itemCounts: itemCounts),
+    );
+    if (result == null || !mounted) return;
+    await settings.saveCategories(result);
+    if (!mounted) return;
+    final added = result.where((c) => !before.contains(c));
+    final removed = before.where((c) => !result.contains(c));
+    if (added.isEmpty && removed.isEmpty) return;
+    await context.read<SessionViewModel>().log([
+      if (added.isNotEmpty) 'Added categories ${added.join(', ')}',
+      if (removed.isNotEmpty) 'Removed categories ${removed.join(', ')}',
+    ].join(' · '));
+  }
+
   Future<void> _exportCsv() async {
     // Exports the full inventory, not just the current search/filter —
     // "export inventory" should mean all of it.
     final items = context.read<InventoryViewModel>().items;
     final threshold = context.read<SettingsViewModel>().lowStockThreshold;
     final csv = buildCsv(
-      ['Name', 'Category', 'Bargain', 'Price', 'Qty On Hand', 'Low Stock'],
+      ['Name', 'Category', 'Price', 'On Sale', 'Sale Price', 'Qty On Hand', 'Low Stock'],
       [
         for (final item in items)
           [
             item.name,
             item.category,
-            item.isBargain ? 'Yes' : 'No',
             item.unitPrice,
+            item.onSale ? 'Yes' : 'No',
+            item.onSale ? item.sellingPrice : '',
             item.qtyOnHand,
             item.isLowStock(threshold) ? 'Yes' : 'No',
           ],
@@ -189,6 +242,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     }).toList();
     final threshold = context.watch<SettingsViewModel>().lowStockThreshold;
     final canEdit = context.watch<SessionViewModel>().isOwner;
+    final categories = categoryOptions(context.watch<SettingsViewModel>().categories, all);
 
     final units = all.fold(0, (sum, i) => sum + i.qtyOnHand);
     final out = all.where((i) => i.qtyOnHand <= 0).length;
@@ -206,23 +260,23 @@ class _InventoryScreenState extends State<InventoryScreen> {
               if (canEdit) ...[
                 TextButton.icon(
                   onPressed: _openThresholdDialog,
-                  icon: const Icon(Icons.tune, size: 18),
+                  icon: const Icon(CupertinoIcons.slider_horizontal_3, size: 18),
                   label: Text('Low stock ≤ $threshold'),
                 ),
                 IconButton(
                   onPressed: _exportCsv,
-                  icon: const Icon(Icons.file_download_outlined, size: 20),
+                  icon: const Icon(CupertinoIcons.square_arrow_down, size: 20),
                   tooltip: 'Export CSV',
                 ),
                 OutlinedButton.icon(
                   onPressed: _openAddDialog,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('ADD ITEM'),
+                  icon: const Icon(CupertinoIcons.add, size: 18),
+                  label: const Text('Add Item'),
                 ),
                 ElevatedButton.icon(
                   onPressed: _openReceiveDialog,
-                  icon: const Icon(Icons.move_to_inbox_outlined, size: 18),
-                  label: const Text('RECEIVE STOCK'),
+                  icon: const Icon(CupertinoIcons.tray_arrow_down, size: 18),
+                  label: const Text('Receive Stock'),
                 ),
               ],
             ],
@@ -234,17 +288,25 @@ class _InventoryScreenState extends State<InventoryScreen> {
               const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: ChoiceStrip<String?>(
-                  options: [(null, 'All'), for (final c in kCategories) (c, c)],
+                  options: [(null, 'All'), for (final c in categories) (c, c)],
                   selected: _categoryFilter,
                   onSelected: (c) => setState(() => _categoryFilter = c),
                 ),
               ),
+              if (canEdit) ...[
+                const SizedBox(width: AppSpacing.sm),
+                IconButton(
+                  onPressed: _openCategoriesDialog,
+                  icon: const Icon(CupertinoIcons.square_pencil, size: 22),
+                  tooltip: 'Add or remove categories',
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 20),
           Expanded(
             child: items.isEmpty
-                ? const EmptyState(icon: Icons.inventory_2_outlined, message: 'No items found')
+                ? const EmptyState(icon: CupertinoIcons.cube_box, message: 'No items found')
                 : SingleChildScrollView(
                     padding: const EdgeInsets.only(bottom: 24),
                     child: ListSurface(
@@ -286,11 +348,11 @@ class _InventoryHeaderRow extends StatelessWidget {
       padding: _rowPadding.add(const EdgeInsets.symmetric(vertical: 10)),
       child: Row(
         children: [
-          Expanded(flex: _flexItem, child: Text('ITEM', style: style)),
-          Expanded(flex: _flexPrice, child: Text('SELLS FOR', style: style, textAlign: TextAlign.right)),
-          Expanded(flex: _flexStock, child: Text('IN STOCK', style: style, textAlign: TextAlign.right)),
+          Expanded(flex: _flexItem, child: Text('Item', style: style)),
+          Expanded(flex: _flexPrice, child: Text('Sells for', style: style, textAlign: TextAlign.right)),
+          Expanded(flex: _flexStock, child: Text('In stock', style: style, textAlign: TextAlign.right)),
           const SizedBox(width: AppSpacing.xl),
-          Expanded(flex: _flexStatus, child: Text('STATUS', style: style)),
+          Expanded(flex: _flexStatus, child: Text('Status', style: style)),
           const SizedBox(width: _actionsWidth),
         ],
       ),
@@ -319,9 +381,9 @@ class _InventoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tabular = context.text.bodyMedium?.copyWith(fontFeatures: kTabularFigures);
     final Widget status = item.qtyOnHand <= 0
-        ? const StatusPill(label: 'OUT OF STOCK', tone: PillTone.danger)
+        ? const StatusPill(label: 'Out of stock', tone: PillTone.danger)
         : item.isLowStock(threshold)
-            ? const StatusPill(label: 'LOW STOCK', tone: PillTone.warning)
+            ? const StatusPill(label: 'Low stock', tone: PillTone.warning)
             : const SizedBox.shrink();
 
     return InkWell(
@@ -349,9 +411,9 @@ class _InventoryRow extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (item.isBargain) ...[
+                            if (item.onSale) ...[
                               const SizedBox(width: AppSpacing.sm),
-                              const StatusPill(label: 'SALE', tone: PillTone.accent),
+                              SalePill(item: item),
                             ],
                           ],
                         ),
@@ -367,7 +429,7 @@ class _InventoryRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(_peso.format(item.unitPrice), style: tabular),
+                  SalePriceText(item: item, style: tabular),
                   if (onEdit != null)
                     Text(
                       item.unitCost == null ? 'cost not set' : 'paid ${_peso.format(item.unitCost)}',
@@ -389,14 +451,14 @@ class _InventoryRow extends StatelessWidget {
                 children: [
                   if (onAdjust != null)
                     IconButton(
-                      icon: const Icon(Icons.swap_vert, size: 18),
+                      icon: const Icon(CupertinoIcons.arrow_up_arrow_down, size: 18),
                       tooltip: 'Adjust stock',
                       onPressed: onAdjust,
                     ),
                   if (onEdit != null)
-                    IconButton(icon: const Icon(Icons.edit_outlined, size: 18), tooltip: 'Edit', onPressed: onEdit),
+                    IconButton(icon: const Icon(CupertinoIcons.pencil, size: 18), tooltip: 'Edit', onPressed: onEdit),
                   if (onDelete != null)
-                    IconButton(icon: const Icon(Icons.delete_outline, size: 18), tooltip: 'Delete', onPressed: onDelete),
+                    IconButton(icon: const Icon(CupertinoIcons.trash, size: 18), tooltip: 'Delete', onPressed: onDelete),
                 ],
               ),
             ),
