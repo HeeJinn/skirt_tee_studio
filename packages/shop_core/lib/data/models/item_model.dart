@@ -8,7 +8,9 @@ class ItemModel extends Item {
     required super.category,
     required super.unitPrice,
     required super.qtyOnHand,
-    super.isBargain,
+    super.onSale,
+    super.salePercent,
+    super.salePrice,
     super.imagePath,
     super.unitCost,
   });
@@ -19,7 +21,9 @@ class ItemModel extends Item {
         category: item.category,
         unitPrice: item.unitPrice,
         qtyOnHand: item.qtyOnHand,
-        isBargain: item.isBargain,
+        onSale: item.onSale,
+        salePercent: item.salePercent,
+        salePrice: item.salePrice,
         imagePath: item.imagePath,
         unitCost: item.unitCost,
       );
@@ -30,7 +34,10 @@ class ItemModel extends Item {
         category: map['category'] as String,
         unitPrice: (map['unitPrice'] as num).toDouble(),
         qtyOnHand: map['qtyOnHand'] as int,
-        isBargain: (map['isBargain'] as int) == 1,
+        // The column kept its name from when a sale was a "Bargain" tag.
+        onSale: (map['isBargain'] as int) == 1,
+        salePercent: (map['salePercent'] as num?)?.toDouble(),
+        salePrice: (map['salePrice'] as num?)?.toDouble(),
         imagePath: switch (map['imageKey'] as String?) {
           final key? => ItemImageStorage.instance.pathFor(key),
           null => null,
@@ -44,7 +51,9 @@ class ItemModel extends Item {
         'category': category,
         'unitPrice': unitPrice,
         'qtyOnHand': qtyOnHand,
-        'isBargain': isBargain ? 1 : 0,
+        'isBargain': onSale ? 1 : 0,
+        'salePercent': onSale ? salePercent : null,
+        'salePrice': onSale ? salePrice : null,
         'imageKey': switch (imagePath) {
           final path? => ItemImageStorage.keyFor(path),
           null => null,

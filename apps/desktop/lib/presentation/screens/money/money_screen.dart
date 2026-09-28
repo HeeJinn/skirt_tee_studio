@@ -184,10 +184,33 @@ class _MoneyScreenState extends State<MoneyScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _PaybackPanel(
-                    payback: pay,
-                    stockValue: stockValueAtCost(items),
-                    onPutIn: () => _record(MoneyEntryKind.capitalIn),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final left = _MoneyLeftPanel(
+                        money: shopMoney(
+                          sales: sales,
+                          entries: money.entries,
+                          lots: money.lots,
+                          booksStartedAt: booksStart,
+                        ),
+                        stockValue: stockValueAtCost(items),
+                        booksStart: booksStart,
+                      );
+                      final paid = _PaybackPanel(payback: pay, onPutIn: () => _record(MoneyEntryKind.capitalIn));
+                      if (constraints.maxWidth < 900) {
+                        return Column(children: [left, const SizedBox(height: AppSpacing.lg), paid]);
+                      }
+                      return IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(child: left),
+                            const SizedBox(width: AppSpacing.lg),
+                            Expanded(child: paid),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   ChoiceStrip<ReportRange>(
@@ -260,12 +283,129 @@ class _MoneyScreenState extends State<MoneyScreen> {
   }
 }
 
+/// How much money the shop is holding right now, and how it got there:
+/// everything that came in, less everything that went out.
+class _MoneyLeftPanel extends StatelessWidget {
+  const _MoneyLeftPanel({required this.money, required this.stockValue, required this.booksStart});
+
+  final ShopMoney money;
+  final double stockValue;
+  final DateTime booksStart;
+
+  @override
+  Widget build(BuildContext context) {
+    final m = money;
+    final nonCash = m.sales - m.cashSales;
+    final below = m.left < 0;
+
+    return _Panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('MONEY IN THE SHOP', style: context.text.titleSmall),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            signedPeso(m.left, whole: true),
+            style: context.text.displaySmall?.copyWith(
+              fontFeatures: kTabularFigures,
+              color: below ? context.tokens.danger : null,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            below
+                ? 'More went out than the books show coming in. Money you put in that wasn\'t recorded '
+                    'is the usual reason — add it with Put money in.'
+                : 'Cash and e-wallets together, from everything recorded since ${_day.format(booksStart)}.',
+            style: context.text.bodyMedium,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _FlowLine('Put in by the owners', '+${pesoWhole.format(m.putIn)}'),
+          _FlowLine(
+            'Sales',
+            '+${pesoWhole.format(m.sales)}',
+            detail: nonCash > 0 ? '${pesoWhole.format(m.cashSales)} cash · ${pesoWhole.format(nonCash)} GCash, Maya & card' : null,
+          ),
+          _FlowLine('Expenses paid from the shop', _minus(m.expenses)),
+          _FlowLine('Stock bought with shop money', _minus(m.stockBought)),
+          _FlowLine('Taken home', _minus(m.takenHome)),
+          const Divider(height: AppSpacing.lg),
+          _FlowLine('Money left', signedPeso(m.left, whole: true), strong: true),
+          _FlowLine('Also on the rack: stock, at what it cost', pesoWhole.format(stockValue), muted: true),
+        ],
+      ),
+    );
+  }
+
+  static String _minus(double v) => v == 0 ? pesoWhole.format(0) : '−${pesoWhole.format(v)}';
+}
+
+/// One step of the money-left sum: label on the left, amount on the right.
+class _FlowLine extends StatelessWidget {
+  const _FlowLine(this.label, this.value, {this.detail, this.strong = false, this.muted = false});
+
+  final String label;
+  final String value;
+  final String? detail;
+  final bool strong;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final base = strong ? context.text.titleMedium : context.text.bodyMedium;
+    final color = muted ? context.tokens.mutedText : null;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: base?.copyWith(color: color)),
+                if (detail != null) Text(detail!, style: context.text.bodySmall?.copyWith(fontFeatures: kTabularFigures)),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Text(
+            value,
+            style: base?.copyWith(
+              color: color,
+              fontFeatures: kTabularFigures,
+              fontWeight: strong ? FontWeight.w700 : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Panel extends StatelessWidget {
+  const _Panel({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.container),
+        border: Border.all(color: context.tokens.hairline),
+      ),
+      child: child,
+    );
+  }
+}
+
 /// All-time: what the owners put in against what the shop has earned.
 class _PaybackPanel extends StatelessWidget {
-  const _PaybackPanel({required this.payback, required this.stockValue, required this.onPutIn});
+  const _PaybackPanel({required this.payback, required this.onPutIn});
 
   final Payback payback;
-  final double stockValue;
   final VoidCallback onPutIn;
 
   @override
@@ -303,64 +443,36 @@ class _PaybackPanel extends StatelessWidget {
     final byPerson = p.investedByPerson.entries.toList();
     final showPeople = byPerson.length > 1 || (byPerson.length == 1 && byPerson.single.key != Payback.bothOwners);
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.container),
-        border: Border.all(color: context.tokens.hairline),
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('PAYBACK', style: context.text.titleSmall),
-                  const SizedBox(height: AppSpacing.md),
-                  headline,
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(sentence, style: context.text.bodyMedium),
-                  const SizedBox(height: AppSpacing.lg),
-                  if (share == null)
-                    OutlinedButton.icon(
-                      onPressed: onPutIn,
-                      icon: const Icon(Icons.savings_outlined, size: 18),
-                      label: const Text('PUT MONEY IN'),
-                    )
-                  else
-                    _Meter(share: share),
-                  if (showPeople) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      'Put in: ${byPerson.map((e) => '${e.key} ${pesoWhole.format(e.value)}').join(' · ')}',
-                      style: context.text.bodySmall?.copyWith(fontFeatures: kTabularFigures),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.xl),
-            VerticalDivider(color: context.tokens.hairline, width: 1),
-            const SizedBox(width: AppSpacing.xl),
-            Expanded(
-              flex: 2,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _Fact('Put in', pesoWhole.format(p.invested)),
-                  _Fact('Earned by the shop', signedPeso(p.earned, whole: true)),
-                  _Fact('Taken home', pesoWhole.format(p.takenHome)),
-                  _Fact('Stock on the rack, at cost', pesoWhole.format(stockValue)),
-                ],
-              ),
-            ),
-          ],
-        ),
+    return _Panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('PAYBACK', style: context.text.titleSmall),
+          const SizedBox(height: AppSpacing.md),
+          headline,
+          const SizedBox(height: AppSpacing.sm),
+          Text(sentence, style: context.text.bodyMedium),
+          const SizedBox(height: AppSpacing.lg),
+          if (share == null)
+            OutlinedButton.icon(
+              onPressed: onPutIn,
+              icon: const Icon(Icons.savings_outlined, size: 18),
+              label: const Text('PUT MONEY IN'),
+            )
+          else
+            _Meter(share: share),
+          const SizedBox(height: AppSpacing.lg),
+          _Fact('Put in, all told', pesoWhole.format(p.invested)),
+          if (showPeople)
+            for (final MapEntry(key: person, value: amount) in byPerson)
+              _Fact(person == Payback.bothOwners ? 'by both' : 'by $person', pesoWhole.format(amount), indent: true),
+          _Fact('Earned by the shop', signedPeso(p.earned, whole: true)),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            '"Put in" also counts expenses and stock you paid for from your own pockets.',
+            style: context.text.bodySmall,
+          ),
+        ],
       ),
     );
   }
@@ -402,20 +514,24 @@ class _Meter extends StatelessWidget {
 }
 
 class _Fact extends StatelessWidget {
-  const _Fact(this.label, this.value);
+  const _Fact(this.label, this.value, {this.indent = false});
   final String label;
   final String value;
+
+  /// A part of the line above.
+  final bool indent;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: EdgeInsets.fromLTRB(indent ? AppSpacing.lg : 0, indent ? 0 : 6, 0, indent ? 2 : 6),
       child: Row(
         children: [
           Expanded(child: Text(label, style: context.text.bodySmall)),
           Text(
             value,
-            style: context.text.titleMedium?.copyWith(fontFeatures: kTabularFigures),
+            style: (indent ? context.text.bodySmall : context.text.titleMedium)
+                ?.copyWith(fontFeatures: kTabularFigures),
           ),
         ],
       ),

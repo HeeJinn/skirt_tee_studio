@@ -8,10 +8,13 @@ import 'package:shop_core/domain/costing.dart';
 import 'package:shop_core/domain/entities/item.dart';
 import 'package:shop_core/domain/entities/money_entry.dart';
 import 'package:shop_core/domain/entities/stock.dart';
+import 'package:shop_core/domain/repositories/settings_repository.dart';
+import '../../../../core/constants/categories.dart';
 import '../../../widgets/date_field.dart';
 import '../../../widgets/filter_bar.dart';
 import '../../../widgets/item_thumbnail.dart';
 import '../../../widgets/list_surface.dart';
+import 'category_field.dart';
 import 'item_form_dialog.dart';
 
 final _peso = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
@@ -26,13 +29,24 @@ class ReceivedLot {
   int get pieces => lines.fold(0, (sum, l) => sum + l.qty);
 }
 
-/// Records a purchase of stock — typically a mixed bulk lot sorted into
-/// several items. The lot's cost is split across the pieces by selling
-/// price, and the dialog previews each item's resulting cost before saving.
+/// Records a purchase of stock — typically a mixed bundle (tees, skirts,
+/// long sleeves…) sorted into several items. Each kind goes in on one quick
+/// line (category, price, pieces) without opening a form per item. The
+/// lot's cost is split across the pieces by selling price, and the dialog
+/// previews each item's resulting cost before saving.
 class ReceiveStockDialog extends StatefulWidget {
-  const ReceiveStockDialog({super.key, required this.items, required this.ownerNames});
+  const ReceiveStockDialog({
+    super.key,
+    required this.items,
+    required this.ownerNames,
+    this.categories = SettingsRepository.defaultCategories,
+  });
 
   final List<Item> items;
+
+  /// The shop's categories. New ones typed here come back on the lot's new
+  /// items; the caller adds them to the shop's list.
+  final List<String> categories;
 
   /// For "whose money" when the owners paid themselves. With one owner (or
   /// none) the choice isn't shown.
@@ -43,10 +57,10 @@ class ReceiveStockDialog extends StatefulWidget {
 }
 
 class _Draft {
-  _Draft(this.item, {required this.isNew});
+  _Draft(this.item, {required this.isNew, int? pieces}) : qty = TextEditingController(text: pieces?.toString());
   final Item item;
   final bool isNew;
-  final qty = TextEditingController();
+  final TextEditingController qty;
 
   int get pieces => int.tryParse(qty.text) ?? 0;
 }
@@ -63,6 +77,29 @@ class _ReceiveStockDialogState extends State<ReceiveStockDialog> {
   String? _person;
   String? _linesError;
 
+  // The quick-add line.
+  late String _quickCategory = widget.categories.firstOrNull ?? 'Other';
+  final _quickName = TextEditingController();
+  final _quickPrice = TextEditingController();
+  final _quickPieces = TextEditingController();
+  final _quickNameFocus = FocusNode();
+  String? _quickError;
+
+  /// The shop's categories plus any the lot's new items brought in.
+  List<String> get _categories => categoryOptions(widget.categories, [
+        ...widget.items,
+        for (final d in _drafts.where((d) => d.isNew)) d.item,
+      ]);
+
+  /// What the bundle held, e.g. {T-Shirt: 12, Long Sleeves: 5}.
+  Map<String, int> get _piecesByCategory {
+    final counts = <String, int>{};
+    for (final d in _drafts.where((d) => d.pieces > 0)) {
+      counts.update(d.item.category, (v) => v + d.pieces, ifAbsent: () => d.pieces);
+    }
+    return counts;
+  }
+
   double get _totalCost => (parseAmount(_itemsCost.text) ?? 0) + (parseAmount(_fees.text) ?? 0);
 
   List<LotLine> get _lines => [
@@ -72,9 +109,10 @@ class _ReceiveStockDialogState extends State<ReceiveStockDialog> {
 
   @override
   void dispose() {
-    for (final c in [_supplier, _itemsCost, _fees, _note]) {
+    for (final c in [_supplier, _itemsCost, _fees, _note, _quickName, _quickPrice, _quickPieces]) {
       c.dispose();
     }
+    _quickNameFocus.dispose();
     for (final d in _drafts) {
       d.qty.dispose();
     }
@@ -93,11 +131,71 @@ class _ReceiveStockDialogState extends State<ReceiveStockDialog> {
   }
 
   Future<void> _addNewItem() async {
-    final item = await showDialog<Item>(context: context, builder: (_) => const ItemFormDialog(forLot: true));
+    final item = await showDialog<Item>(
+      context: context,
+      builder: (_) => ItemFormDialog(forLot: true, categories: _categories),
+    );
     if (item != null && mounted) _addDraft(_Draft(item, isNew: true));
   }
 
+  bool get _quickLineStarted => [_quickName, _quickPrice, _quickPieces].any((c) => c.text.trim().isNotEmpty);
+
+  /// Adds the quick line to the lot. With no name, the item is named after
+  /// its category ("Long Sleeves"). A name already in inventory, or already
+  /// in this lot, tops up that item rather than making a second one with the
+  /// same name. Returns whether it was added.
+  bool _addQuickLine() {
+    final pieces = int.tryParse(_quickPieces.text.trim());
+    final priceText = _quickPrice.text.trim();
+    final price = priceText.isEmpty ? null : parseAmount(priceText);
+    final name = _quickName.text.trim().isEmpty ? _quickCategory : _quickName.text.trim();
+
+    String? error;
+    bool same(Item i) => i.name.trim().toLowerCase() == name.toLowerCase();
+    final inLot = _drafts.where((d) => same(d.item)).firstOrNull;
+    final inStock = widget.items.where(same).firstOrNull;
+    final match = inLot?.item ?? inStock;
+
+    if (pieces == null || pieces <= 0) {
+      error = 'How many pieces? Enter 1 or more.';
+    } else if (priceText.isNotEmpty && (price == null || price < 0)) {
+      error = 'Enter what each piece sells for.';
+    } else if (match != null && price != null && price != match.unitPrice) {
+      error = '"${match.name}" already sells for ${_peso.format(match.unitPrice)}. '
+          'Give pieces at a different price their own name, e.g. "$name ${formatAmountInput(price)}".';
+    } else if (match == null && price == null) {
+      error = 'Enter what each piece sells for.';
+    }
+    if (error != null) {
+      setState(() => _quickError = error);
+      return false;
+    }
+
+    setState(() {
+      if (inLot != null) {
+        inLot.qty.text = '${inLot.pieces + pieces!}';
+      } else if (inStock != null) {
+        _drafts.add(_Draft(inStock, isNew: false, pieces: pieces));
+      } else {
+        _drafts.add(_Draft(
+          Item(id: const Uuid().v4(), name: name, category: _quickCategory, unitPrice: price!, qtyOnHand: 0),
+          isNew: true,
+          pieces: pieces,
+        ));
+      }
+      _linesError = null;
+      _quickError = null;
+      _quickName.clear();
+      _quickPrice.clear();
+      _quickPieces.clear();
+    });
+    _quickNameFocus.requestFocus();
+    return true;
+  }
+
   void _submit() {
+    // A filled-in quick line that wasn't added yet is surely meant to be.
+    if (_quickLineStarted && !_addQuickLine()) return;
     final fieldsValid = _formKey.currentState!.validate();
     setState(() => _linesError = _drafts.isEmpty ? 'Add the items this lot was sorted into.' : null);
     if (!fieldsValid || _drafts.isEmpty) return;
@@ -124,6 +222,84 @@ class _ReceiveStockDialogState extends State<ReceiveStockDialog> {
     final n = parseAmount(v);
     if (n == null || n < 0) return 'Enter an amount';
     return null;
+  }
+
+  /// Category, name, price, pieces, Enter — one kind of piece from the
+  /// bundle per line, without opening a form.
+  Widget _quickLine(BuildContext context) {
+    void submit([_]) => _addQuickLine();
+    void clearError(_) {
+      if (_quickError != null) setState(() => _quickError = null);
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: context.tokens.sunken,
+        borderRadius: BorderRadius.circular(AppRadius.container),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 170,
+                child: CategoryField(
+                  options: _categories,
+                  value: _quickCategory,
+                  onChanged: (c) => setState(() => _quickCategory = c),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: TextField(
+                  controller: _quickName,
+                  focusNode: _quickNameFocus,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(labelText: 'Item name', hintText: _quickCategory),
+                  onChanged: clearError,
+                  onSubmitted: submit,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              SizedBox(
+                width: 110,
+                child: TextField(
+                  controller: _quickPrice,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Sells for ₱'),
+                  onChanged: clearError,
+                  onSubmitted: submit,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              SizedBox(
+                width: _qtyWidth,
+                child: TextField(
+                  controller: _quickPieces,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Pieces'),
+                  onChanged: clearError,
+                  onSubmitted: submit,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: ElevatedButton(onPressed: submit, child: const Text('ADD')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _quickError ?? 'No name? It\'s named after the category. A name already in inventory adds to that item.',
+            style: context.text.bodySmall?.copyWith(color: _quickError == null ? null : context.tokens.danger),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -203,7 +379,9 @@ class _ReceiveStockDialogState extends State<ReceiveStockDialog> {
                 const SizedBox(height: AppSpacing.sm),
                 SectionLabel('Pieces in this lot', trailing: pieces == 0 ? null : '$pieces pieces'),
                 Text(
-                  'Count only pieces you\'ll sell. Leave damaged ones out — their cost is spread over the rest.',
+                  'A mixed bundle? Add each kind on its own line — e.g. T-Shirt, ₱150, 12 pieces, then Long Sleeves, '
+                  '₱180, 5 pieces. Count only pieces you\'ll sell; leave damaged ones out — their cost is spread '
+                  'over the rest.',
                   style: context.text.bodySmall,
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -223,6 +401,8 @@ class _ReceiveStockDialogState extends State<ReceiveStockDialog> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                 ],
+                _quickLine(context),
+                const SizedBox(height: AppSpacing.md),
                 Row(
                   children: [
                     Expanded(
@@ -232,10 +412,13 @@ class _ReceiveStockDialogState extends State<ReceiveStockDialog> {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
-                    OutlinedButton.icon(
-                      onPressed: _addNewItem,
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text('NEW ITEM'),
+                    Tooltip(
+                      message: 'Add a new item with a photo',
+                      child: OutlinedButton.icon(
+                        onPressed: _addNewItem,
+                        icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                        label: const Text('NEW ITEM'),
+                      ),
                     ),
                   ],
                 ),
@@ -245,7 +428,11 @@ class _ReceiveStockDialogState extends State<ReceiveStockDialog> {
                 ],
                 if (pieces > 0) ...[
                   const SizedBox(height: AppSpacing.lg),
-                  _LotSummary(lines: lines, totalCost: _totalCost),
+                  _LotSummary(
+                    lines: lines,
+                    totalCost: _totalCost,
+                    piecesByCategory: _piecesByCategory,
+                  ),
                 ],
                 const SizedBox(height: AppSpacing.md),
                 TextFormField(controller: _note, decoration: const InputDecoration(labelText: 'Note (optional)')),
@@ -525,9 +712,10 @@ class _ItemPickerState extends State<_ItemPicker> {
 /// piece shares the same margin (that's what splitting by selling price
 /// does), so this one figure speaks for the whole lot.
 class _LotSummary extends StatelessWidget {
-  const _LotSummary({required this.lines, required this.totalCost});
+  const _LotSummary({required this.lines, required this.totalCost, required this.piecesByCategory});
   final List<LotLine> lines;
   final double totalCost;
+  final Map<String, int> piecesByCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -568,6 +756,13 @@ class _LotSummary extends StatelessWidget {
               ),
             ],
           ),
+          if (piecesByCategory.length > 1) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'In this bundle: ${piecesByCategory.entries.map((e) => '${e.value} ${e.key}').join(' · ')}',
+              style: context.text.bodySmall?.copyWith(fontFeatures: kTabularFigures),
+            ),
+          ],
           if (losing) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(

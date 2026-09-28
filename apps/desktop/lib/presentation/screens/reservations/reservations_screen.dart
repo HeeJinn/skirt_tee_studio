@@ -209,7 +209,7 @@ class _ReservationRowState extends State<_ReservationRow> {
       // the pickup can't go through.
       final item = inventory.items.where((i) => i.id == widget.reservation.itemId).firstOrNull;
       if (item != null) {
-        received = await showCashTenderDialog(context, total: item.unitPrice, confirmLabel: 'COMPLETE PICKUP');
+        received = await showCashTenderDialog(context, total: item.sellingPrice, confirmLabel: 'COMPLETE PICKUP');
         if (received == null || !mounted) return;
       }
     }

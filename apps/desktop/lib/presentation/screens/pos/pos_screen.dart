@@ -14,12 +14,12 @@ import '../../viewmodels/sales_view_model.dart';
 import '../../viewmodels/session_view_model.dart';
 import '../../viewmodels/settings_view_model.dart';
 import '../../widgets/payment_icon.dart';
+import '../../widgets/sale_price.dart';
 import '../../widgets/success_check.dart';
 import '../../widgets/filter_bar.dart';
 import '../../widgets/item_thumbnail.dart';
 import '../../widgets/list_surface.dart';
 import '../../widgets/screen_header.dart';
-import '../../widgets/status_pill.dart';
 import 'cash_tender_dialog.dart';
 import 'tender.dart';
 
@@ -124,7 +124,12 @@ class _PosScreenState extends State<PosScreen> {
                     Expanded(
                       flex: 3,
                       child: ChoiceStrip<String?>(
-                        options: [(null, 'All'), for (final c in kCategories) (c, c)],
+                        // Only categories with something to sell.
+                        options: [
+                          (null, 'All'),
+                          for (final c in categoryOptions(context.watch<SettingsViewModel>().categories, inventory))
+                            if (inventory.any((i) => i.category == c)) (c, c),
+                        ],
                         selected: _categoryFilter,
                         onSelected: (c) => setState(() => _categoryFilter = c),
                       ),
@@ -252,8 +257,7 @@ class _ItemTileState extends State<_ItemTile> {
                         fit: StackFit.expand,
                         children: [
                           ItemThumbnail(imagePath: item.imagePath, name: item.name, radius: 0),
-                          if (item.isBargain)
-                            const Positioned(top: 8, left: 8, child: StatusPill(label: 'SALE', tone: PillTone.accent)),
+                          if (item.onSale) Positioned(top: 8, left: 8, child: SalePill(item: item)),
                           Positioned(
                             top: 8,
                             right: 8,
@@ -286,8 +290,8 @@ class _ItemTileState extends State<_ItemTile> {
                             crossAxisAlignment: CrossAxisAlignment.baseline,
                             textBaseline: TextBaseline.alphabetic,
                             children: [
-                              Text(
-                                _peso.format(item.unitPrice),
+                              SalePriceText(
+                                item: item,
                                 style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                               ),
                               const SizedBox(width: AppSpacing.sm),
@@ -497,7 +501,7 @@ class _CartLineRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
-                Text('${_peso.format(line.item.unitPrice)} each', style: context.text.bodySmall),
+                SalePriceText(item: line.item, suffix: ' each', style: context.text.bodySmall),
               ],
             ),
           ),

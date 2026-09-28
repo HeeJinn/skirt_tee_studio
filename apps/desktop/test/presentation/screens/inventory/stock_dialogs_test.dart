@@ -5,6 +5,7 @@ import 'package:shop_core/domain/entities/item.dart';
 import 'package:shop_core/domain/entities/money_entry.dart';
 import 'package:shop_core/domain/entities/stock.dart';
 import 'package:skirt_tee_studio/presentation/screens/inventory/widgets/adjust_stock_dialog.dart';
+import 'package:skirt_tee_studio/presentation/screens/inventory/widgets/category_field.dart';
 import 'package:skirt_tee_studio/presentation/screens/inventory/widgets/item_form_dialog.dart';
 import 'package:skirt_tee_studio/presentation/screens/inventory/widgets/receive_stock_dialog.dart';
 
@@ -40,6 +41,9 @@ const _costLabel = 'What you paid for each (₱)';
 
 /// The lot's per-line piece counts, in line order.
 final _qtyFields = find.byWidgetPredicate((w) => w is TextField && w.decoration?.hintText == '0');
+
+/// A field of Receive stock's quick-add line.
+Finder _quick(String label) => find.widgetWithText(TextField, label);
 
 Future<void> _pickItem(WidgetTester tester, String name) async {
   await tester.enterText(find.widgetWithText(TextField, 'Add an item from inventory'), name.substring(0, 4));
@@ -107,6 +111,68 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('This lot costs more than it can sell for at current prices.'), findsOneWidget);
+    });
+
+    testWidgets('a mixed bundle goes in one kind per quick line', (tester) async {
+      final result = await _open<ReceivedLot>(tester, const ReceiveStockDialog(items: [_tee], ownerNames: []));
+      await tester.enterText(_field('Price paid for the lot (₱)'), '2000');
+
+      // No name: named after the category (the first one, T-Shirt).
+      await tester.enterText(_quick('Sells for ₱'), '150');
+      await tester.enterText(_quick('Pieces'), '12');
+      await tester.tap(find.text('ADD'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(CategoryField));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Long Sleeves').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(_quick('Sells for ₱'), '180');
+      await tester.enterText(_quick('Pieces'), '5');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      // A name already in inventory tops up that item, at its own price.
+      await tester.enterText(_quick('Item name'), 'basic tee');
+      await tester.enterText(_quick('Pieces'), '3');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(find.text('In this bundle: 15 T-Shirt · 5 Long Sleeves'), findsOneWidget);
+      await tester.tap(find.text('RECEIVE 20 PIECES'));
+      await tester.pumpAndSettle();
+
+      final lot = result()!;
+      expect(lot.newItems.map((i) => (i.name, i.category, i.unitPrice)), [
+        ('T-Shirt', 'T-Shirt', 150),
+        ('Long Sleeves', 'Long Sleeves', 180),
+      ]);
+      expect(lot.lines.map((l) => (l.itemName, l.qty)), [('T-Shirt', 12), ('Long Sleeves', 5), ('Basic Tee', 3)]);
+    });
+
+    testWidgets('a quick line at a different price than the item with that name is refused', (tester) async {
+      await _open<ReceivedLot>(tester, const ReceiveStockDialog(items: [_tee], ownerNames: []));
+
+      await tester.enterText(_quick('Item name'), 'Basic Tee');
+      await tester.enterText(_quick('Sells for ₱'), '200');
+      await tester.enterText(_quick('Pieces'), '3');
+      await tester.tap(find.text('ADD'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('"Basic Tee" already sells for ₱150.00'), findsOneWidget);
+      expect(_qtyFields, findsNothing);
+    });
+
+    testWidgets('a filled-in quick line not yet added is received too', (tester) async {
+      final result = await _open<ReceivedLot>(tester, const ReceiveStockDialog(items: [], ownerNames: []));
+
+      await tester.enterText(_field('Price paid for the lot (₱)'), '500');
+      await tester.enterText(_quick('Sells for ₱'), '100');
+      await tester.enterText(_quick('Pieces'), '8');
+      await tester.tap(find.text('RECEIVE'));
+      await tester.pumpAndSettle();
+
+      expect(result()!.lines.single.qty, 8);
     });
 
     testWidgets('with one owner, doesn\'t ask whose money it was', (tester) async {
@@ -185,6 +251,112 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(result()!.unitCost, isNull);
+    });
+
+    testWidgets('an item goes on sale by a percent off, previewing the price', (tester) async {
+      final result = await _open<Item>(tester, const ItemFormDialog(item: _tee));
+
+      await tester.tap(find.text('On sale'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('% off'));
+      await tester.pumpAndSettle();
+      await tester.enterText(_field('Percent off (%)'), '20');
+      await tester.pumpAndSettle();
+      expect(find.text('Sells for ₱120.00 instead of ₱150.00.'), findsOneWidget);
+      await tester.tap(find.text('SAVE'));
+      await tester.pumpAndSettle();
+
+      expect(result()!.onSale, isTrue);
+      expect(result()!.salePercent, 20);
+      expect(result()!.salePrice, isNull);
+      expect(result()!.sellingPrice, 120);
+    });
+
+    testWidgets('a sale price has to be below the regular price', (tester) async {
+      final result = await _open<Item>(tester, const ItemFormDialog(item: _tee));
+
+      await tester.tap(find.text('On sale'));
+      await tester.pumpAndSettle();
+      await tester.enterText(_field('Sale price (₱)'), '150');
+      await tester.tap(find.text('SAVE'));
+      await tester.pumpAndSettle();
+      expect(find.text('Less than the regular ₱150.00'), findsOneWidget);
+      expect(result(), isNull);
+
+      await tester.enterText(_field('Sale price (₱)'), '99');
+      await tester.pumpAndSettle();
+      expect(find.text('Sells for ₱99.00 instead of ₱150.00 — 34% off.'), findsOneWidget);
+      await tester.tap(find.text('SAVE'));
+      await tester.pumpAndSettle();
+      expect(result()!.salePrice, 99);
+    });
+
+    testWidgets('turning a sale off ends it', (tester) async {
+      const onSale = Item(
+        id: 'tee',
+        name: 'Basic Tee',
+        category: 'T-Shirt',
+        unitPrice: 150,
+        qtyOnHand: 4,
+        onSale: true,
+        salePercent: 20,
+      );
+      final result = await _open<Item>(tester, const ItemFormDialog(item: onSale));
+
+      expect(find.text('Sells for ₱120.00 instead of ₱150.00.'), findsOneWidget);
+      await tester.tap(find.text('On sale'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('SAVE'));
+      await tester.pumpAndSettle();
+
+      expect(result()!.onSale, isFalse);
+      expect(result()!.sellingPrice, 150);
+    });
+
+    testWidgets('an old Bargain tag asks for a discount', (tester) async {
+      const tagged = Item(id: 'b', name: 'Bin Tee', category: 'T-Shirt', unitPrice: 50, qtyOnHand: 4, onSale: true);
+      await _open<Item>(tester, const ItemFormDialog(item: tagged));
+
+      expect(find.text('Tagged SALE with no discount yet — set one, or turn On sale off.'), findsOneWidget);
+    });
+
+    testWidgets('a category not on the list can be added from the form', (tester) async {
+      final result = await _open<Item>(tester, const ItemFormDialog());
+
+      await tester.tap(find.byType(CategoryField));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('New category…').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextFormField, 'Name').last, 'Dress');
+      await tester.tap(find.text('ADD').last);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(_field('Name'), 'Floral dress');
+      await tester.enterText(_field('Sells for (₱)'), '600');
+      await tester.enterText(_field('Already in stock'), '0');
+      await tester.tap(find.text('ADD'));
+      await tester.pumpAndSettle();
+
+      expect(result()!.category, 'Dress');
+    });
+
+    testWidgets('typing a category that exists reuses its spelling', (tester) async {
+      final result = await _open<Item>(tester, const ItemFormDialog());
+
+      await tester.tap(find.byType(CategoryField));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('New category…').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextFormField, 'Name').last, ' long sleeves ');
+      await tester.tap(find.text('ADD').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(_field('Name'), 'Striped top');
+      await tester.enterText(_field('Sells for (₱)'), '180');
+      await tester.enterText(_field('Already in stock'), '0');
+      await tester.tap(find.text('ADD'));
+      await tester.pumpAndSettle();
+
+      expect(result()!.category, 'Long Sleeves');
     });
 
     testWidgets('an existing item shows its cost as text and keeps it unless changed', (tester) async {

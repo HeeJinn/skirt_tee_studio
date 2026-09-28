@@ -147,35 +147,56 @@ class _PaybackCard extends StatelessWidget {
                 : '${signedPeso(payback.earned, whole: true)} earned back of ${pesoWhole.format(payback.invested)} put in',
             style: ShopType.footnote(context).copyWith(color: muted),
           ),
+          if (payback.investedByPerson.keys.any((p) => p != Payback.bothOwners))
+            Text(
+              'Put in by ${[
+                for (final MapEntry(key: person, value: amount) in payback.investedByPerson.entries)
+                  '${person == Payback.bothOwners ? 'both' : person} ${pesoWhole.format(amount)}',
+              ].join(' · ')}',
+              style: ShopType.footnote(context).copyWith(color: muted),
+            ),
         ],
       ),
     );
   }
 }
 
+/// How much money the shop is holding — drawer and e-wallets — laid out as
+/// what came in less what went out, ending on what's left.
 class _WhereItIs extends StatelessWidget {
   const _WhereItIs({required this.vm});
   final MoneyViewModel vm;
 
   @override
   Widget build(BuildContext context) {
-    final p = vm.paybackStatus;
-    final byPerson = p.investedByPerson.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final m = vm.money;
+    final nonCash = m.sales - m.cashSales;
     final started = vm.booksStartedAt;
     return GroupedSection(
-      title: 'Where the money is',
+      title: 'Money in the shop',
       footer: started == null
           ? "The shop computer's books haven't reached this phone yet."
-          : 'Counting since the books started on ${DateFormat('MMMM d, y').format(started)}.',
+          : m.left < 0
+              ? 'More went out than the books show coming in — usually money put in that '
+                  'wasn\'t recorded on the shop computer.'
+              : 'Cash and e-wallets together, counted since the books started on '
+                  '${DateFormat('MMMM d, y').format(started)}.',
       children: [
-        for (final MapEntry(key: person, value: amount) in byPerson)
-          ValueRow(
-            label: person == Payback.bothOwners ? 'Put in' : 'Put in by $person',
-            value: peso.format(amount),
-          ),
-        ValueRow(label: 'Taken home', value: peso.format(p.takenHome)),
-        ValueRow(label: 'Still in the shop', value: signedPeso(p.stillInShop), tone: ValueTone.strong),
-        ValueRow(label: 'Stock on the rack, at cost', value: peso.format(vm.stockValue), indent: true),
+        ValueRow(label: 'Put in', value: '+${peso.format(m.putIn)}'),
+        ValueRow(
+          label: 'Sales',
+          detail: nonCash > 0 ? '${pesoWhole.format(m.cashSales)} paid in cash' : null,
+          value: '+${peso.format(m.sales)}',
+        ),
+        ValueRow(label: 'Expenses', value: minusPeso(m.expenses), indent: true),
+        ValueRow(label: 'Stock bought', value: minusPeso(m.stockBought), indent: true),
+        ValueRow(label: 'Taken home', value: minusPeso(m.takenHome), indent: true),
+        ValueRow(
+          label: 'Money left',
+          value: signedPeso(m.left),
+          tone: m.left < 0 ? ValueTone.negative : ValueTone.strong,
+        ),
+        ValueRow(label: 'Plus stock on the rack, at cost', value: peso.format(vm.stockValue), tone: ValueTone.muted),
       ],
     );
   }

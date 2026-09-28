@@ -557,8 +557,13 @@ void main() {
     // ₱470 earned since the books started, on ₱10,000 put in.
     expect(find.text('5%'), findsOneWidget);
     expect(find.text('₱470 earned back of ₱10,000 put in'), findsOneWidget);
-    expect(find.text('Put in by Ana'), findsOneWidget);
-    expect(find.text('₱9,470.00'), findsOneWidget, reason: 'still in the shop: 10,000 + 470 − 1,000 taken home');
+    expect(find.text('Put in by Ana ₱10,000'), findsOneWidget);
+    expect(
+      find.text('₱8,050.00'),
+      findsOneWidget,
+      reason: 'money left: 10,000 put in + 2,850 sales − 1,000 rent − 2,800 bale − 1,000 taken home',
+    );
+    expect(find.text('₱2,250 paid in cash'), findsOneWidget);
     expect(find.text('₱2,400.00'), findsOneWidget, reason: 'stock on the rack: 12 skirts at ₱200');
     expect(find.textContaining('books started on September 1, 2026'), findsOneWidget);
   });

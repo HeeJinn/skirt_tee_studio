@@ -37,7 +37,7 @@ class AppColors {
 
 /// Semantic color roles. Status colors (success/warning/danger) carry fixed
 /// meaning and always ship with a label, never color alone. `accent` (clay)
-/// is reserved for the Bargain/SALE marker.
+/// is reserved for the SALE marker.
 @immutable
 class AppTokens extends ThemeExtension<AppTokens> {
   const AppTokens({

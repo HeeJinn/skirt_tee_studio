@@ -144,6 +144,69 @@ Payback payback({
   );
 }
 
+/// The money the shop is holding — drawer and e-wallets together — worked
+/// out from the books: what came in, less what went out. Stock on the rack
+/// isn't in it; that's money already spent.
+class ShopMoney {
+  const ShopMoney({
+    required this.putIn,
+    required this.sales,
+    required this.cashSales,
+    required this.expenses,
+    required this.stockBought,
+    required this.takenHome,
+  });
+
+  /// Money the owners handed to the shop. Expenses and lots they paid from
+  /// their own pockets never passed through it, so they're in neither side.
+  final double putIn;
+  final double sales;
+
+  /// The part of [sales] paid in cash (or from before payment methods were
+  /// recorded) — what should be in the drawer rather than an e-wallet.
+  final double cashSales;
+
+  /// Paid with shop money.
+  final double expenses;
+
+  /// Lots paid with shop money.
+  final double stockBought;
+  final double takenHome;
+
+  double get cameIn => putIn + sales;
+  double get wentOut => expenses + stockBought + takenHome;
+
+  /// Below zero means more went out than the books show coming in — money
+  /// the owners put in that was never recorded, usually.
+  double get left => cameIn - wentOut;
+}
+
+/// Sales count from [booksStartedAt], like profit: the money from sales
+/// before then was never counted, and neither was what it paid for.
+ShopMoney shopMoney({
+  required List<Sale> sales,
+  required List<MoneyEntry> entries,
+  required List<StockLot> lots,
+  DateTime? booksStartedAt,
+}) {
+  var salesTotal = 0.0;
+  var cashSales = 0.0;
+  for (final sale in sales.where((s) => booksStartedAt == null || !s.dateTime.isBefore(booksStartedAt))) {
+    salesTotal += sale.totalAmount;
+    if (sale.paymentMethod == null || sale.paymentMethod == PaymentMethod.cash) cashSales += sale.totalAmount;
+  }
+  double sum(Iterable<MoneyEntry> es) => es.fold(0, (total, e) => total + e.amount);
+
+  return ShopMoney(
+    putIn: sum(entries.where((e) => e.kind == MoneyEntryKind.capitalIn)),
+    sales: salesTotal,
+    cashSales: cashSales,
+    expenses: sum(entries.where((e) => e.kind == MoneyEntryKind.expense && e.paidFrom == PaidFrom.shop)),
+    stockBought: lots.where((l) => l.paidFrom == PaidFrom.shop).fold(0, (total, l) => total + l.totalCost),
+    takenHome: sum(entries.where((e) => e.kind == MoneyEntryKind.ownerDraw)),
+  );
+}
+
 /// One month's sales against everything that month cost the shop.
 class MonthlyProfit {
   const MonthlyProfit({required this.month, required this.sales, required this.costs});

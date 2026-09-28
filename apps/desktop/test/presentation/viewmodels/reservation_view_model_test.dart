@@ -87,6 +87,23 @@ void main() {
     expect(saleRepository.lastRecordedSale!.paymentMethod, PaymentMethod.cash);
   });
 
+  test('completePickup charges the sale price if the item is on sale at pickup', () async {
+    await viewModel.addReservation(reservation);
+    const onSale = Item(
+      id: 'item-1',
+      name: 'Basic Tee',
+      category: 'T-Shirt',
+      unitPrice: 199,
+      qtyOnHand: 3,
+      onSale: true,
+      salePrice: 150,
+    );
+
+    await viewModel.completePickup(reservation, const [onSale], PaymentMethod.cash);
+
+    expect(saleRepository.lastRecordedSale!.totalAmount, 150);
+  });
+
   test('completePickup throws and leaves state untouched when the item is gone', () async {
     await viewModel.addReservation(reservation);
 

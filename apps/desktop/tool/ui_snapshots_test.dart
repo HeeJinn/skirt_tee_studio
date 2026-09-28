@@ -32,8 +32,11 @@ import 'package:skirt_tee_studio/presentation/viewmodels/session_view_model.dart
 import 'package:skirt_tee_studio/presentation/viewmodels/settings_view_model.dart';
 import 'package:shop_core/domain/entities/staff.dart';
 import 'package:skirt_tee_studio/presentation/screens/auth/sign_in_screen.dart';
+import 'package:skirt_tee_studio/presentation/screens/inventory/widgets/category_field.dart';
 
+import 'package:shop_core/testing/fake_cloud_sync_repository.dart';
 import 'package:shop_core/testing/fake_money_repository.dart';
+import 'package:shop_core/viewmodels/cloud_sync_view_model.dart';
 import 'package:shop_core/testing/fake_reservation_repository.dart';
 import 'package:shop_core/testing/fake_sale_repository.dart';
 import 'package:shop_core/testing/fake_settings_repository.dart';
@@ -63,9 +66,9 @@ const _items = [
   Item(id: 'i4', name: 'Denim Mini Skirt', category: 'Skirt', unitPrice: 399, qtyOnHand: 0),
   Item(id: 'i5', name: 'Linen Shorts', category: 'Shorts', unitPrice: 299, qtyOnHand: 12, unitCost: 138),
   Item(id: 'i6', name: 'Floral Wrap Blouse', category: 'Blouse', unitPrice: 459, qtyOnHand: 5),
-  Item(id: 'i7', name: 'Ruffle Sleeve Blouse', category: 'Blouse', unitPrice: 129, qtyOnHand: 15, isBargain: true),
+  Item(id: 'i7', name: 'Ruffle Sleeve Blouse', category: 'Blouse', unitPrice: 129, qtyOnHand: 15, onSale: true, salePercent: 20),
   Item(id: 'i8', name: 'Kids Dino Tee', category: 'Kids', unitPrice: 149, qtyOnHand: 18, unitCost: 69),
-  Item(id: 'i9', name: 'Kids Tutu Skirt', category: 'Kids', unitPrice: 99, qtyOnHand: 2, isBargain: true),
+  Item(id: 'i9', name: 'Kids Tutu Skirt', category: 'Kids', unitPrice: 99, qtyOnHand: 2, onSale: true),
   Item(id: 'i10', name: 'Oversized Graphic Tee', category: 'T-Shirt', unitPrice: 279, qtyOnHand: 9),
 ];
 
@@ -220,6 +223,9 @@ Future<Widget> _buildApp(ThemeMode mode) async {
       ChangeNotifierProvider(create: (_) => SettingsViewModel(FakeSettingsRepository())),
       ChangeNotifierProvider.value(value: session),
       ChangeNotifierProvider.value(value: money),
+      ChangeNotifierProvider(
+        create: (_) => CloudSyncViewModel(FakeCloudSyncRepository(), onRemoteChanges: () async {})..load(),
+      ),
     ],
     child: RepaintBoundary(
       key: _boundaryKey,
@@ -338,14 +344,40 @@ void main() {
       for (final (i, n) in ['30', '12', '10'].indexed) {
         await tester.enterText(qty.at(i), n);
       }
+      // A kind that isn't in inventory yet, from the quick line.
+      await tester.tap(find.byType(CategoryField));
+      await tester.pumpAndSettle();
+      await _snap(tester, '2a0_quick_category_menu_$suffix');
+      await tester.tap(find.text('Long Sleeves').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Sells for ₱'), '249');
+      await tester.enterText(find.widgetWithText(TextField, 'Pieces'), '8');
+      await tester.tap(find.text('ADD'));
       await tester.tap(find.text('Our own money'));
       await _snap(tester, '2a_receive_stock_$suffix');
+      await tester.drag(find.byType(SingleChildScrollView).last, const Offset(0, -600));
+      await _snap(tester, '2a1_receive_stock_bottom_$suffix');
       await tester.tap(find.text('CANCEL'));
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Adjust stock').first);
       await tester.pumpAndSettle();
       await tester.enterText(find.widgetWithText(TextFormField, 'Pieces'), '2');
       await _snap(tester, '2b_adjust_stock_$suffix');
+      await tester.tap(find.text('CANCEL'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Add or remove categories'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'New category, e.g. Dress'), 'Dress');
+      await tester.tap(find.text('ADD'));
+      await _snap(tester, '2e_categories_$suffix');
+      await tester.tap(find.text('CANCEL'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ruffle Sleeve Blouse'));
+      await _snap(tester, '2f_item_on_sale_$suffix');
+      await tester.tap(find.text('Sale price'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextFormField, 'Sale price (₱)'), '99');
+      await _snap(tester, '2g_item_sale_price_$suffix');
       await tester.tap(find.text('CANCEL'));
       await tester.pumpAndSettle();
 

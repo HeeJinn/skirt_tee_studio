@@ -144,7 +144,7 @@ Future<Widget> _buildApp(String imagesDir) async {
       qtyOnHand: qty,
       unitCost: cost,
       imagePath: path,
-      isBargain: id == 'i7' || id == 'i9',
+      onSale: id == 'i7' || id == 'i9',
     ));
   }
 

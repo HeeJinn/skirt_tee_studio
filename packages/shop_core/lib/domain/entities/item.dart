@@ -8,7 +8,9 @@ class Item {
     required this.category,
     required this.unitPrice,
     required this.qtyOnHand,
-    this.isBargain = false,
+    this.onSale = false,
+    this.salePercent,
+    this.salePrice,
     this.imagePath,
     this.unitCost,
   });
@@ -16,9 +18,23 @@ class Item {
   final String id;
   final String name;
   final String category; // e.g. "T-Shirt", "Skirt", "Kids"
+
+  /// The regular price. What it sells for right now is [sellingPrice].
   final double unitPrice;
   final int qtyOnHand;
-  final bool isBargain;
+
+  /// Marked down. The discount is [salePercent] or [salePrice], whichever
+  /// the owners set. Items tagged "Bargain" before sales had a discount have
+  /// neither, and sell at [unitPrice] with only the tag.
+  ///
+  /// Stored in the isBargain / is_bargain column, its name from then.
+  final bool onSale;
+
+  /// Percent off [unitPrice] while [onSale], e.g. 20 for 20% off.
+  final double? salePercent;
+
+  /// A set sale price while [onSale], instead of a percent.
+  final double? salePrice;
 
   /// Local filesystem path to a copy this app made under its own storage
   /// (see ItemImageStorage) — never a path chosen by the user directly, so
@@ -31,16 +47,33 @@ class Item {
   /// before cost tracking started, which the books count at ₱0.
   final double? unitCost;
 
+  /// What a piece sells for now — the sale price while on sale. A percent
+  /// off rounds to the whole peso (20% off ₱249 is ₱199), the way prices
+  /// are written on the rack.
+  double get sellingPrice {
+    if (!onSale) return unitPrice;
+    if (salePrice != null) return salePrice!;
+    if (salePercent != null) return (unitPrice * (100 - salePercent!) / 100).roundToDouble();
+    return unitPrice;
+  }
+
+  /// Whether the sale actually lowers the price (a bare "Bargain" tag doesn't).
+  bool get isMarkedDown => sellingPrice < unitPrice;
+
+  /// How much is off, as a whole percent, e.g. "20% off". Null when nothing is.
+  int? get percentOff =>
+      isMarkedDown && unitPrice > 0 ? ((unitPrice - sellingPrice) / unitPrice * 100).round() : null;
+
   /// Threshold is a configurable, store-wide setting (see SettingsViewModel)
   /// — not fixed on the item — so it's passed in rather than hardcoded.
   bool isLowStock(int threshold) => qtyOnHand <= threshold;
 
+  /// Keeps the sale as it is; build a new Item to change or end one.
   Item copyWith({
     String? name,
     String? category,
     double? unitPrice,
     int? qtyOnHand,
-    bool? isBargain,
     String? imagePath,
     double? unitCost,
   }) {
@@ -50,7 +83,9 @@ class Item {
       category: category ?? this.category,
       unitPrice: unitPrice ?? this.unitPrice,
       qtyOnHand: qtyOnHand ?? this.qtyOnHand,
-      isBargain: isBargain ?? this.isBargain,
+      onSale: onSale,
+      salePercent: salePercent,
+      salePrice: salePrice,
       imagePath: imagePath ?? this.imagePath,
       unitCost: unitCost ?? this.unitCost,
     );

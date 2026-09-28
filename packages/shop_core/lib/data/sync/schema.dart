@@ -19,7 +19,11 @@ final appSchema = Schema([
     Column.text('category'),
     Column.real('unitPrice'),
     Column.integer('qtyOnHand'),
+    // "On sale" (named from when it was a Bargain tag), and the discount:
+    // a percent off or a set price.
     Column.integer('isBargain'),
+    Column.real('salePercent'),
+    Column.real('salePrice'),
     // File name in the item images folder (and the cloud bucket), not a
     // path: the path differs on every PC.
     Column.text('imageKey'),

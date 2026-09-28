@@ -35,6 +35,22 @@ void main() {
     expect(await repository.getLowStockThreshold(), 2);
   });
 
+  test('categories start from the defaults and load what was saved', () async {
+    expect(viewModel.categories, SettingsRepository.defaultCategories);
+    await repository.setCategories(['Tops', 'Bottoms']);
+
+    await viewModel.load();
+
+    expect(viewModel.categories, ['Tops', 'Bottoms']);
+  });
+
+  test('addCategories saves only names not already on the list, ignoring case', () async {
+    await viewModel.addCategories(['long sleeves', 'Dress', ' dress ', '']);
+
+    expect(viewModel.categories, [...SettingsRepository.defaultCategories, 'Dress']);
+    expect(await repository.getCategories(), viewModel.categories);
+  });
+
   test('theme defaults to Studio Sage following the system mode', () {
     expect(viewModel.themePreset, ThemePresets.studioSage);
     expect(viewModel.appearanceMode, AppearanceMode.system);

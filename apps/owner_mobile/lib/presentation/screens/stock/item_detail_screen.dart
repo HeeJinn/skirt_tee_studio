@@ -173,7 +173,8 @@ class _Title extends StatelessWidget {
             runSpacing: Space.xs,
             children: [
               Pill(text: item.category, color: colors.secondaryInk),
-              if (item.isBargain) Pill(text: 'Bargain', color: colors.accent),
+              if (item.onSale)
+                Pill(text: item.percentOff == null ? 'Sale' : 'Sale −${item.percentOff}%', color: colors.accent),
               if (vm.isSoldOut(item))
                 Pill(text: 'Sold out', color: colors.danger)
               else if (vm.isLow(item))
@@ -195,14 +196,16 @@ class _Figures extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = ShopColors.of(context);
     final cost = item.unitCost;
-    final margin = cost == null ? null : item.unitPrice - cost;
+    // On sale, both figures are at the sale price — what a piece brings in now.
+    final price = item.sellingPrice;
+    final margin = cost == null ? null : price - cost;
     final figures = [
       ('On hand', '${item.qtyOnHand > 0 ? item.qtyOnHand : 0}', null),
-      ('Sells for', pesoWhole.format(item.unitPrice), null),
+      ('Sells for', pesoWhole.format(price), item.isMarkedDown ? 'was ${pesoWhole.format(item.unitPrice)}' : null),
       (
         'Makes each',
         margin == null ? '—' : signedPeso(margin, whole: true),
-        margin == null || item.unitPrice == 0 ? 'cost unknown' : '${(margin / item.unitPrice * 100).round()}% margin',
+        margin == null || price == 0 ? 'cost unknown' : '${(margin / price * 100).round()}% margin',
       ),
     ];
     return Container(

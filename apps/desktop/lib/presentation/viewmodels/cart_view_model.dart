@@ -13,7 +13,7 @@ class CartLine {
   final Item item;
   int qty;
 
-  double get subtotal => item.unitPrice * qty;
+  double get subtotal => item.sellingPrice * qty;
 }
 
 class CartViewModel extends ChangeNotifier {
@@ -82,7 +82,7 @@ class CartViewModel extends ChangeNotifier {
           .map((l) => SaleLineItem(
                 itemId: l.item.id,
                 itemName: l.item.name,
-                unitPrice: l.item.unitPrice,
+                unitPrice: l.item.sellingPrice,
                 qty: l.qty,
               ))
           .toList(),

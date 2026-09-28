@@ -66,6 +66,25 @@ void main() {
     expect(repository.lastRecordedSale!.paymentMethod, PaymentMethod.cashless);
   });
 
+  test('an item on sale is charged its sale price', () async {
+    const onSale = Item(
+      id: '2',
+      name: 'Band Tee',
+      category: 'T-Shirt',
+      unitPrice: 249,
+      qtyOnHand: 5,
+      onSale: true,
+      salePercent: 20,
+    );
+    viewModel.addItem(onSale);
+    viewModel.addItem(onSale);
+    expect(viewModel.total, 398);
+
+    await viewModel.checkout(PaymentMethod.cash);
+
+    expect(repository.lastRecordedSale!.lineItems.single.unitPrice, 199);
+  });
+
   test('checkout records the cash handed over, and the change it implies', () async {
     viewModel.addItem(item);
 
