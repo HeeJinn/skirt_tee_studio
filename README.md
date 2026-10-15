@@ -165,8 +165,7 @@ The first owner to connect the shop computer creates the shop in the cloud. Any 
    returning shop_id, role;
    ```
 
-> [!IMPORTANT]
-> Do step 2 **before** they sign in on the shop computer. A login with no shop link that connects the shop computer gets a new, empty shop of its own, and the computer starts syncing to that one. The owner mobile app is safe either way: it refuses a login with no shop link.
+⚠️ **Do step 2 before** they sign in on the shop computer. A login with no shop link that connects the shop computer gets a new, empty shop of its own, and the computer starts syncing to that one. The owner mobile app is safe either way: it refuses a login with no shop link.
 
 </details>
 
