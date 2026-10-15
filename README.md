@@ -1,44 +1,88 @@
-# The Skirt & Tee Studio — POS, Inventory, and Owner App
+<p align="center">
+  <img src="docs/mockup/hero.png" alt="The Skirt & Tee Studio: the POS on the shop computer and the owner app on iPhone" width="100%">
+</p>
 
-Point-of-sale and inventory software for **The Skirt & Tee Studio**, a small clothing boutique. It's built with Flutter as two apps:
+<h1 align="center">The Skirt &amp; Tee Studio</h1>
 
-- **The desktop app** runs on the shop computer. It rings up sales, manages stock, and keeps working offline. Once an owner connects it, it also backs everything up to the cloud (Supabase).
-- **The owner mobile app** is an iPhone app that lets the owners check on the shop from anywhere. It shows the shop computer's data as it syncs.
+<p align="center">
+  <b>Point of sale, stock and books for a two-owner clothing boutique.</b><br>
+  The shop computer rings up sales and keeps working offline. The owners' iPhone app shows every sale as it syncs.
+</p>
 
-![POS screen](docs/screenshots/pos.png)
+<p align="center">
+  <img alt="Flutter" src="https://img.shields.io/badge/Flutter-02569B?logo=flutter&logoColor=white">
+  <img alt="Dart 3.13" src="https://img.shields.io/badge/Dart-3.13-0175C2?logo=dart&logoColor=white">
+  <img alt="Supabase" src="https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white">
+  <img alt="PowerSync" src="https://img.shields.io/badge/PowerSync-offline--first-1a1a1a">
+  <img alt="Platforms" src="https://img.shields.io/badge/platforms-Windows%20%C2%B7%20iOS-5c6560">
+</p>
 
-## Desktop app features
+<p align="center">
+  <a href="#the-two-apps">The two apps</a> ·
+  <a href="#shop-computer-features">Features</a> ·
+  <a href="#owner-mobile-app">Owner app</a> ·
+  <a href="#getting-started">Getting started</a> ·
+  <a href="#development">Development</a> ·
+  <a href="ROADMAP.md">Roadmap</a>
+</p>
 
-- **POS**: search and filter items by category, build a sale, and take payment by cash, GCash, Maya, or card. Cash payments work out the change.
-- **Inventory**: items with photos, prices, stock counts, and a configurable low-stock warning. **Receive stock** records a bulk purchase lot and splits its cost (including shipping) across the pieces. **Adjust stock** records damaged, lost, or found pieces.
-- **Reservations**: log orders that come in through Facebook or chat, then mark them picked up to turn them into a real sale.
-- **Sales history**: every transaction with its line items, plus voiding a sale to restore stock.
-- **Reports**: revenue trend, top sellers, and revenue by category for the last 7 days, 30 days, or all time.
-- **Money** (owners only): money put in, expenses, money taken home, profit breakdown, and how much of the investment has been paid back.
-- **Customers**: repeat customers grouped from reservation history, with their pickup rate.
-- **Staff and roles**: PIN sign-in with owner and cashier roles, a lock button, and an activity log of every sale, void, and stock or price change.
-- **Settings**: six color themes and a System / Light / Dark switch.
-- **Cloud backup** (owners only): connect the shop computer to the cloud in **Settings**. Every sale, stock change, money entry, and item photo is copied up whenever the internet is on. If the computer breaks, sign in on a new one and everything comes back.
-- **Backup and export**: one-click database backup, plus CSV export of inventory and sales.
+---
 
-## Themes
+## The two apps
 
-Pick a theme in **Settings** and it applies right away. Each theme has its own light and dark palette, and every text and button color meets WCAG contrast.
+Both are built with Flutter in one Dart workspace and share their data layer.
+
+| | **Shop computer** (`apps/desktop`) | **Owner app** (`apps/owner_mobile`) |
+|---|---|---|
+| **Runs on** | Windows, at the till | iPhone |
+| **Does** | Rings up sales, receives stock lots, keeps the books | Today, Sales, Stock and Money at a glance |
+| **Writes data** | Yes | No, read-only for now |
+| **Offline** | Fully works without internet | Keeps an offline copy |
+| **Look** | iPadOS 26 style, six color themes | iOS 26 style, Liquid Glass tab bar |
+
+```mermaid
+flowchart LR
+  POS["🖥️ Shop computer<br/>local SQLite"] <-->|PowerSync| Cloud[("☁️ Supabase<br/>Postgres + Storage")]
+  Cloud -->|PowerSync| Phone["📱 Owner iPhone app<br/>offline copy"]
+```
+
+<p align="center">
+  <img src="docs/mockup/portfolio.png" alt="The owner app's Today tab, the POS, and the owner app's Stock tab" width="100%">
+</p>
+
+## Shop computer features
+
+| | |
+|---|---|
+| 🛒 **POS** | Search and filter items by category, build a sale, and take payment by cash, GCash, Maya, or card. Cash payments work out the change. |
+| 📦 **Inventory** | Items with photos, prices, stock counts, sale prices, and a configurable low-stock warning. **Receive stock** records a bulk purchase lot and splits its cost (shipping included) across the pieces. **Adjust stock** records damaged, lost, or found pieces. |
+| 📝 **Reservations** | Log orders that come in through Facebook or chat, then mark them picked up to turn them into a real sale. |
+| 🧾 **Sales history** | Every transaction with its line items, plus voiding a sale to restore stock. |
+| 📈 **Reports** | Revenue trend, top sellers, and revenue by category for the last 7 days, 30 days, or all time. |
+| 💰 **Money** *(owners)* | Money put in, expenses, money taken home, profit breakdown, and how much of the investment has been paid back. |
+| 👥 **Customers** | Repeat customers grouped from reservation history, with their pickup rate. |
+| 🔐 **Staff and roles** | PIN sign-in with owner and cashier roles, a lock button, and an activity log of every sale, void, and stock or price change. |
+| ☁️ **Cloud backup** *(owners)* | Connect the shop computer in **Settings**. Every sale, stock change, money entry, and item photo is copied up whenever the internet is on. If the computer breaks, sign in on a new one and everything comes back. |
+| 💾 **Backup and export** | One-click database backup, plus CSV export of inventory and sales. |
+
+### Themes
+
+Pick a theme in **Settings** and it applies right away, with a System / Light / Dark switch. Each theme has its own light and dark palette, and every text and button color meets WCAG contrast.
 
 | Theme | Look |
 |---|---|
-| Studio Sage (default) | Black ink on pale sage, the shop's logo colors |
-| Blush Atelier | Rosy chrome with a raspberry accent |
-| Terracotta Sand | Sand and clay with a teal SALE marker |
-| Slate & Cobalt | Cool slate neutrals and a crisp cobalt |
-| Lavender Calm | Soft lilac with a deep violet |
-| Editorial Mono | Greyscale with one red for sales |
+| **Studio Sage** (default) | Black ink on pale sage, the shop's logo colors |
+| **Blush Atelier** | Rosy chrome with a raspberry accent |
+| **Terracotta Sand** | Sand and clay with a teal SALE marker |
+| **Slate & Cobalt** | Cool slate neutrals and a crisp cobalt |
+| **Lavender Calm** | Soft lilac with a deep violet |
+| **Editorial Mono** | Greyscale with one red for sales |
 
-![Settings screen](docs/screenshots/settings.png)
-
-| Slate & Cobalt, light | Lavender Calm, dark |
+| Studio Sage, light | Lavender Calm, dark |
 |---|---|
-| ![Inventory in Slate & Cobalt](docs/screenshots/inventory.png) | ![POS in Lavender Calm dark](docs/screenshots/pos_dark.png) |
+| ![POS in Studio Sage](docs/screenshots/pos.png) | ![POS in Lavender Calm dark](docs/screenshots/pos_dark.png) |
+| **Slate & Cobalt, light** | **Settings** |
+| ![Inventory in Slate & Cobalt](docs/screenshots/inventory.png) | ![Settings screen](docs/screenshots/settings.png) |
 
 ## Owner mobile app
 
@@ -72,7 +116,10 @@ flutter run -d windows
 
 **Where your data lives:** on the shop computer, in a local database that works without internet. If an owner has connected **Cloud backup**, it's copied to Supabase too. **Back up data** in the sidebar still saves a local copy.
 
-### Cloud backup setup
+<details>
+<summary><b>Cloud backup setup</b> (Supabase + PowerSync)</summary>
+
+<br>
 
 Cloud backup needs a Supabase project and a PowerSync instance. A build without them runs offline-only, exactly as before.
 
@@ -86,7 +133,7 @@ Cloud backup needs a Supabase project and a PowerSync instance. A build without 
 
    `npx supabase db query --linked -f supabase/tests/smoke_test.sql` checks the live schema and rolls itself back. It should end with `SMOKE TEST PASSED`.
 2. **PowerSync:** create an instance connected to the Supabase database, turn on Supabase Auth, and deploy [`supabase/powersync/sync-rules.yaml`](supabase/powersync/sync-rules.yaml) as its sync rules.
-3. **App config:** at the repo root, copy `cloud.example.json` to `cloud.json` and fill in the Supabase URL, the **publishable** key, and the PowerSync URL. `cloud.json` is gitignored. Never put the Supabase *secret* key in it: the app ships to the shop computer, and the secret key bypasses every access rule.
+3. **App config:** at the repo root, copy `cloud.example.json` to `cloud.json` and fill in the Supabase URL, the **publishable** key, and the PowerSync URL. `cloud.json` is gitignored. **Never put the Supabase *secret* key in it:** the app ships to the shop computer, and the secret key bypasses every access rule.
 
    ```bash
    cd apps/desktop
@@ -97,7 +144,14 @@ Cloud backup needs a Supabase project and a PowerSync instance. A build without 
 
 **Restoring on a new computer:** install the app, set up the owner PIN (staff PINs never leave the computer they were made on), then **Settings → Connect to cloud** with the owner login. Everything downloads, photos included.
 
-**Adding another owner:** the first owner to connect the shop computer creates the shop in the cloud. Any other owner needs two steps, once per person:
+</details>
+
+<details>
+<summary><b>Adding another owner</b></summary>
+
+<br>
+
+The first owner to connect the shop computer creates the shop in the cloud. Any other owner needs two steps, once per person:
 
 1. In Supabase, **Authentication → Users → Add user → Create new user**. Enter their email and a password, and tick **Auto Confirm User**.
 2. Link that login to the shop: **SQL Editor → New query**, paste the following with their email in place of `new.owner@example.com`, then **Run**. It should return one row.
@@ -111,9 +165,14 @@ Cloud backup needs a Supabase project and a PowerSync instance. A build without 
    returning shop_id, role;
    ```
 
-Do step 2 **before** they sign in on the shop computer. A login with no shop link that connects the shop computer gets a new, empty shop of its own, and the computer starts syncing to that one. The owner mobile app is safe either way: it refuses a login with no shop link.
+⚠️ **Do step 2 before** they sign in on the shop computer. A login with no shop link that connects the shop computer gets a new, empty shop of its own, and the computer starts syncing to that one. The owner mobile app is safe either way: it refuses a login with no shop link.
 
-### Owner mobile app
+</details>
+
+<details>
+<summary><b>Running the owner mobile app</b></summary>
+
+<br>
 
 The phone reads what the shop computer uploads, so set up **Cloud backup** first. The phone uses the same `cloud.json`:
 
@@ -125,6 +184,8 @@ flutter run --dart-define-from-file=../../cloud.json
 Sign in with an owner login from Supabase **Authentication → Users**, the same one the shop computer uses. The phone joins the shop the computer created and keeps an offline copy of its data. A build without `cloud.json` shows a screen explaining that it has no cloud settings.
 
 **Where it runs:** the app is designed for iPhone, and building for iPhone needs a Mac with Xcode. Until then, test it on an Android phone or on Windows (`-d windows`, which opens a window at iPhone 15 size). Off Apple devices it uses [Inter](https://rsms.me/inter/) in place of the iPhone's system font, and debug builds behave like an iPhone.
+
+</details>
 
 ## Development
 
@@ -155,11 +216,12 @@ packages/shop_core/   shared by both apps
   lib/calculations/   profit, payback, reports, and customer/sales grouping
   lib/core/           cloud config and the theme presets
 supabase/             database migrations, PowerSync sync config, smoke test
+docs/                 diagrams, screenshots, and the README mockups
 ```
 
 Architecture, database, and sequence diagrams are in [`docs/diagrams`](docs/diagrams). The roadmap and what's planned next are in [`ROADMAP.md`](ROADMAP.md).
 
-## Tech
+### Tech
 
 - **Both apps:** Flutter · `provider` · PowerSync (`powersync`, `sqlite_async`) · Supabase (`supabase_flutter`) · `fl_chart` · `lottie`
 - **Desktop:** `file_selector` · `window_manager`

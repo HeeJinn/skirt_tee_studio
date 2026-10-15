@@ -1,0 +1,57 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Skirt &amp; Tee Showcase</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Screens are real renders from apps/*/tool/ui_snapshots_test.dart, copied into screens/ */
+:root{--ink:#1a1a1a;--chrome:#f2f2f7;--muted:#5c6560}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#e4eae4;font-family:Inter,-apple-system,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+/* shortcut: fixed 1920×1080 canvas made to be screenshotted, not a responsive page */
+.stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:radial-gradient(1200px 800px at 60% 40%,#eef2ee,#dde5df 72%)}
+svg{display:block}
+
+/* ---------- shop computer (Windows window, 1440×900 client area) ---------- */
+.win{position:absolute;left:372px;top:186px;width:1440px;height:934px;transform:scale(.7);transform-origin:top left;
+  border-radius:12px;overflow:hidden;background:var(--chrome);box-shadow:0 0 0 1px rgba(0,0,0,.08),0 50px 110px -30px rgba(26,40,32,.4)}
+.titlebar{height:34px;display:flex;align-items:center;justify-content:space-between;padding-left:16px;font-size:12px;color:var(--muted)}
+.titlebar .ctl{display:flex}.titlebar i{width:46px;height:34px;display:grid;place-items:center;color:#4a524d}
+.titlebar svg{fill:none;stroke:currentColor;stroke-width:1}
+.client{height:900px;background:url(screens/desktop_pos.png) center/100% 100% no-repeat}
+
+/* ---------- owner iPhones (393×852 @2x renders) ---------- */
+.phone{position:absolute;width:417px;height:876px;transform:scale(.8);transform-origin:top left;border-radius:66px;background:#1c1d1f;padding:12px;
+  box-shadow:0 0 0 2px #3a3c3f inset,0 50px 90px -24px rgba(20,32,26,.45)}
+.screen{position:relative;width:100%;height:100%;border-radius:55px;overflow:hidden;background:#f3f5f3 center/100% 100% no-repeat}
+.island{position:absolute;top:11px;left:50%;translate:-50%;width:126px;height:37px;border-radius:20px;background:#000}
+.status{position:absolute;inset:0 0 auto;height:54px;display:flex;justify-content:space-between;align-items:center;padding:4px 34px 0 44px;font-weight:600;font-size:16px}
+.status .r{display:flex;gap:6px;align-items:center}
+.home-ind{position:absolute;bottom:8px;left:50%;translate:-50%;width:134px;height:5px;border-radius:3px;background:var(--ink)}
+</style></head><body>
+<template id="status">
+  <div class="island"></div>
+  <div class="status"><span>9:41</span><span class="r">
+    <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+    <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.5 5.6 8.9a3.4 3.4 0 0 1 4.8 0Z"/><path d="M3.4 6.7a6.6 6.6 0 0 1 9.2 0l-1.3 1.3a4.8 4.8 0 0 0-6.6 0Z"/><path d="M1.2 4.5a9.7 9.7 0 0 1 13.6 0l-1.3 1.3a7.9 7.9 0 0 0-11 0Z"/></svg>
+    <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="9" rx="2"/><path d="M25 4.5v4a2 2 0 0 0 0-4Z" opacity=".4"/></svg>
+  </span></div>
+  <div class="home-ind"></div>
+</template>
+
+<div class="stage">
+  <div class="win">
+    <div class="titlebar"><span>The Skirt &amp; Tee Studio</span>
+      <div class="ctl"><i><svg width="10" height="10"><path d="M0 5h10"/></svg></i><i><svg width="10" height="10"><rect x=".5" y=".5" width="9" height="9"/></svg></i><i><svg width="10" height="10"><path d="m0 0 10 10M10 0 0 10"/></svg></i></div>
+    </div>
+    <div class="client"></div>
+  </div>
+
+  <div class="phone" style="left:150px;top:300px"><div class="screen" style="background-image:url(screens/mobile_today.png)"></div></div>
+  <div class="phone" style="left:1440px;top:150px"><div class="screen" style="background-image:url(screens/mobile_stock.png)"></div></div>
+</div>
+<script>
+  // same status bar, island and home indicator on every phone
+  const t = document.getElementById('status');
+  document.querySelectorAll('.screen').forEach(s => s.append(t.content.cloneNode(true)));
+</script>
+</body></html>
