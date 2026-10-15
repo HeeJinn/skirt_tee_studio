@@ -1,0 +1,254 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Skirt &amp; Tee Hero</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Studio Sage, from packages/shop_core/lib/core/theme */
+:root{--ink:#1a1a1a;--mist:#dce4de;--surface:#fff;--sunken:#f3f5f3;--outline:#c4ccc7;--hair:#e3e8e4;--muted:#5c6560;
+  --success:#1b7a36;--warning:#8a5a00;--danger:#b3261e;--accent:#a55a25;--stage:#e4eae4}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--stage);font-family:Inter,-apple-system,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+/* shortcut: fixed 1920×1080 canvas made to be screenshotted, not a responsive page */
+.stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--stage)}
+.serif{font-family:Georgia,'Times New Roman',serif}
+svg{display:block}
+.ico{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- editorial frame ---------- */
+.masthead{position:absolute;left:112px;right:112px;top:52px;display:flex;justify-content:space-between;align-items:center;
+  font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:600;padding-bottom:14px;border-bottom:1px solid #c9d2cb}
+.masthead span:last-child{color:var(--muted);font-weight:500}
+.copy{position:absolute;left:112px;top:150px;width:452px}
+.kicker{font-size:13px;color:var(--muted);letter-spacing:.04em;margin-bottom:22px}
+.copy h1{font-family:Georgia,serif;font-weight:700;font-size:58px;line-height:1.04;letter-spacing:-.025em}
+.copy p{margin-top:26px;font-size:18px;line-height:1.55;color:#3f4743}
+.specs{margin-top:38px;border-top:1px solid #c9d2cb}
+.specs div{display:grid;grid-template-columns:96px 1fr;padding:13px 0;border-bottom:1px solid #c9d2cb;font-size:15px}
+.specs dt{color:var(--muted)}
+.foot{position:absolute;left:112px;bottom:60px;font-size:13px;color:var(--muted);line-height:1.7}
+.foot b{color:var(--ink);font-weight:600}
+.caps{position:absolute;left:984px;top:846px;display:flex;gap:64px}
+.cap{width:330px;font-size:14px;line-height:1.5;color:#3f4743}
+.cap .n{font-family:Georgia,serif;font-size:13px;color:var(--muted);margin-bottom:6px;display:block}
+.cap b{display:block;color:var(--ink);font-weight:600;font-size:15px}
+
+/* ---------- desktop window ---------- */
+.win{position:absolute;left:730px;top:138px;width:1280px;height:800px;transform:scale(.84);transform-origin:top left;
+  border-radius:12px;overflow:hidden;background:var(--surface);box-shadow:0 1px 0 rgba(0,0,0,.04),0 40px 90px -30px rgba(26,40,32,.35),0 0 0 1px rgba(0,0,0,.08)}
+.titlebar{height:34px;background:var(--mist);display:flex;align-items:center;justify-content:space-between;padding-left:16px;font-size:12px;color:var(--muted)}
+.titlebar .ctl{display:flex}.titlebar .ctl i{width:46px;height:34px;display:grid;place-items:center;color:#4a524d}
+.app{display:flex;height:766px}
+.side{width:224px;background:var(--mist);padding:20px 12px 16px;display:flex;flex-direction:column;font-size:14px}
+.word{padding:6px 12px 22px;line-height:1.3}
+.word b{display:block;font-size:13px;letter-spacing:.2em;font-weight:700}
+.word small{font-size:10px;letter-spacing:.42em;color:#3f4743}
+.grp{font-size:11px;letter-spacing:.12em;color:var(--muted);font-weight:600;padding:16px 12px 6px}
+.nav{display:flex;align-items:center;gap:12px;height:40px;padding:0 12px;border-radius:10px;color:#2b302d}
+.nav.on{background:#c4cec7;font-weight:600}
+.nav svg{width:18px;height:18px}
+.side .me{margin-top:auto;border-top:1px solid #c7d0c9;padding:14px 8px 0;display:flex;align-items:center;gap:10px}
+.av{width:32px;height:32px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:12px;font-weight:700}
+.pos{flex:1;padding:30px 32px;overflow:hidden}
+.pos h2{font-family:Georgia,serif;font-size:26px;letter-spacing:.14em}
+.sub{font-size:13px;color:var(--muted);margin-top:4px}
+.bar{display:flex;gap:10px;margin:22px 0 20px;align-items:center}
+.search{width:220px;height:40px;border-radius:10px;background:var(--sunken);display:flex;align-items:center;gap:8px;padding:0 12px;font-size:14px;color:var(--muted)}
+.chip{height:32px;padding:0 14px;border-radius:999px;border:1px solid var(--outline);font-size:13px;display:grid;place-items:center}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{border-radius:14px;border:1px solid var(--hair);overflow:hidden;background:#fff}
+.ph{height:150px;position:relative;display:grid;place-items:center}
+.ph svg{width:96px;height:96px;stroke:#2b302d;stroke-width:1.4;fill:rgba(255,255,255,.35);stroke-linejoin:round;stroke-linecap:round}
+.qty{position:absolute;top:10px;right:10px;background:var(--ink);color:#fff;font-size:11px;font-weight:700;border-radius:6px;padding:3px 7px}
+.sale{position:absolute;top:10px;left:10px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;letter-spacing:.1em;border-radius:6px;padding:4px 7px}
+.info{padding:12px 14px 14px}
+.info .nm{font-size:14px;font-weight:500}
+.info .row{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px}
+.price{font-weight:700;font-size:15px}.price s{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
+.left{font-size:12px;color:var(--muted)}.left.low{color:var(--warning);font-weight:600}.left.out{color:var(--danger);font-weight:600}
+.card.soldout .ph svg,.card.soldout .nm,.card.soldout .price{opacity:.4}
+.cart{width:380px;background:var(--sunken);border-left:1px solid var(--hair);padding:30px 26px 24px;display:flex;flex-direction:column}
+.cart h3{font-size:13px;letter-spacing:.14em;font-weight:700;display:flex;justify-content:space-between}
+.cart h3 span{letter-spacing:0;font-weight:500;color:var(--muted)}
+.line{display:grid;grid-template-columns:1fr 100px 70px;align-items:center;padding:14px 0;border-bottom:1px solid var(--hair);font-size:14px}
+.line small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.step{height:36px;border-radius:10px;background:#fff;border:1px solid var(--hair);display:flex;justify-content:space-around;align-items:center;font-size:14px}
+.line .amt{text-align:right;font-weight:600}
+.total{margin-top:auto;border-top:1px solid var(--hair);padding-top:18px;display:flex;justify-content:space-between;align-items:baseline}
+.total span{color:var(--muted);font-size:14px}.total b{font-size:34px;font-weight:600;letter-spacing:-.02em}
+.paid{font-size:11px;letter-spacing:.12em;color:var(--muted);font-weight:600;margin:16px 0 8px}
+.pay{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pay div{height:48px;border-radius:12px;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:600;letter-spacing:.06em}
+.pay div:first-child{background:var(--ink);color:#fff}
+.pay svg{width:16px;height:16px}
+
+/* ---------- iPhone ---------- */
+.phone{position:absolute;left:600px;top:296px;width:417px;height:876px;transform:scale(.8);transform-origin:top left;border-radius:66px;background:#1c1d1f;padding:12px;
+  box-shadow:0 0 0 2px #3a3c3f inset,0 50px 90px -24px rgba(20,32,26,.5)}
+.screen{position:relative;width:100%;height:100%;border-radius:55px;overflow:hidden;background:var(--sunken)}
+.island{position:absolute;top:11px;left:50%;translate:-50%;width:126px;height:37px;border-radius:20px;background:#000;z-index:3}
+.status{height:54px;display:flex;justify-content:space-between;align-items:center;padding:4px 34px 0 44px;font-weight:600;font-size:16px}
+.status .r{display:flex;gap:6px;align-items:center}
+.content{padding:4px 18px 0}
+.content h1{font-family:Georgia,serif;font-size:34px;font-weight:700;letter-spacing:-.02em;margin:10px 2px 6px}
+.date{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--muted);margin:0 2px 12px}
+.pill{background:#dbe9de;color:var(--success);font-weight:600;font-size:12px;padding:5px 10px;border-radius:999px;display:flex;gap:4px;align-items:center}
+.hero{background:var(--mist);border-radius:24px;padding:18px 20px 16px}
+.hero .l{font-size:14px;color:#3f4743}
+.hero .big{font-size:46px;font-weight:700;letter-spacing:-.03em;line-height:1.1;margin-top:2px}
+.vs{display:flex;align-items:center;gap:8px;font-size:13px;color:#3f4743;margin-top:8px}
+.up{background:#c9dccd;color:var(--success);font-weight:700;border-radius:999px;padding:3px 9px;font-size:12px}
+.bars{display:flex;justify-content:space-between;align-items:flex-end;height:104px;margin-top:14px;padding:0 4px}
+.bars div{width:24px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.bars i{width:24px;border-radius:7px;background:#b7c0b9;display:block}
+.bars div:last-child i{background:var(--ink)}.bars div:last-child{color:var(--ink);font-weight:700}
+.stats{margin-top:12px;background:#fff;border-radius:22px;padding:14px 4px;display:grid;grid-template-columns:repeat(3,1fr)}
+.stats div{padding:0 14px;font-size:12px;color:var(--muted)}
+.stats div+div{border-left:1px solid var(--hair)}
+.stats b{display:block;color:var(--ink);font-size:20px;font-weight:700;margin:2px 0;letter-spacing:-.01em}
+.stats em{font-style:normal;color:var(--success);font-weight:600;font-size:11px}
+.content h4{font-size:19px;font-weight:700;margin:20px 4px 8px}
+.list{background:#fff;border-radius:22px;padding:0 0 0 16px}
+.it{display:flex;gap:12px;align-items:center;padding:12px 16px 12px 0}
+.it+.it{border-top:1px solid var(--hair)}
+.dot{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex-shrink:0}
+.it b{font-weight:500;font-size:15px;display:block}.it small{font-size:12.5px;color:var(--muted)}
+.tabbar{position:absolute;bottom:26px;left:16px;right:16px;height:66px;border-radius:999px;background:rgba(250,251,250,.72);
+  backdrop-filter:blur(20px) saturate(1.6);-webkit-backdrop-filter:blur(20px) saturate(1.6);box-shadow:0 8px 30px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.08);
+  display:flex;justify-content:space-around;align-items:center;padding:0 6px}
+.tab{width:66px;height:56px;border-radius:999px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10.5px;font-weight:500;color:#3f4743}
+.tab svg{width:22px;height:22px}
+.tab.on{background:rgba(26,26,26,.08);color:var(--ink);font-weight:700}
+.home-ind{position:absolute;bottom:8px;left:50%;translate:-50%;width:134px;height:5px;border-radius:3px;background:var(--ink)}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute">
+  <!-- garment line art, 100×100 -->
+  <symbol id="tee" viewBox="0 0 100 100"><path d="M37 20 23 26 12 42l11 6 5-7v41h44V41l5 7 11-6-11-16-14-6c-2 5-7 8-13 8s-11-3-13-8Z"/></symbol>
+  <symbol id="band" viewBox="0 0 100 100"><path d="M37 20 23 26 12 42l11 6 5-7v41h44V41l5 7 11-6-11-16-14-6c-2 5-7 8-13 8s-11-3-13-8Z"/><circle cx="50" cy="52" r="11"/><path d="M42 52h16M50 44v16" opacity=".6"/></symbol>
+  <symbol id="midi" viewBox="0 0 100 100"><path d="M34 16h32v7H34zM34 23 22 86h56L66 23"/><path d="M42 23l-5 63M50 23v63M58 23l5 63" opacity=".6"/></symbol>
+  <symbol id="wrap" viewBox="0 0 100 100"><path d="M33 18h34v7H33zM33 25 24 80h52L67 25"/><path d="M60 25 40 80" opacity=".6"/><path d="M66 22l8 9" /></symbol>
+  <symbol id="mini" viewBox="0 0 100 100"><path d="M30 28h40v7H30zM30 35l-6 34h52l-6-34"/><path d="M50 35v34M38 42h8M54 42h8" opacity=".6"/></symbol>
+  <symbol id="blouse" viewBox="0 0 100 100"><path d="M38 20 24 25 10 52l10 4 9-16v42h42V40l9 16 10-4-14-27-14-5-12 14Z"/><path d="M50 34v44" opacity=".6"/><circle cx="50" cy="46" r="1.4"/><circle cx="50" cy="58" r="1.4"/><circle cx="50" cy="70" r="1.4"/></symbol>
+</svg>
+
+<div class="stage">
+  <div class="masthead"><span>The Skirt &amp; Tee Studio</span><span>POS · Inventory · Owner app</span></div>
+
+  <div class="copy">
+    <div class="kicker">Flutter · Windows &amp; iPhone · 2026</div>
+    <h1>Point of sale, stock and books for a two&#8209;owner boutique.</h1>
+    <p>The shop computer rings up sales and keeps working when the internet drops. The owners' iPhone app shows every sale, low-stock warning and peso of payback as it syncs.</p>
+    <dl class="specs">
+      <div><dt>Payments</dt><dd>Cash, GCash, Maya and card</dd></div>
+      <div><dt>Stock</dt><dd>Bulk lots, cost split across each piece</dd></div>
+      <div><dt>Money</dt><dd>Investment paid back, profit by month</dd></div>
+      <div><dt>Sync</dt><dd>SQLite on the till, Supabase in the cloud</dd></div>
+    </dl>
+  </div>
+  <div class="foot"><b>Flutter · Dart · SQLite · Supabase · PowerSync</b><br>github.com/HeeJinn/skirt_tee_studio</div>
+
+  <!-- shop computer -->
+  <div class="win">
+    <div class="titlebar"><span>The Skirt &amp; Tee Studio</span>
+      <div class="ctl"><i><svg width="10" height="10" class="ico" stroke-width="1"><path d="M0 5h10"/></svg></i><i><svg width="10" height="10" class="ico" stroke-width="1"><rect x=".5" y=".5" width="9" height="9"/></svg></i><i><svg width="10" height="10" class="ico" stroke-width="1"><path d="m0 0 10 10M10 0 0 10"/></svg></i></div>
+    </div>
+    <div class="app">
+      <aside class="side">
+        <div class="word"><b>THE SKIRT &amp; TEE</b><small>STUDIO</small></div>
+        <div class="grp">SELL</div>
+        <div class="nav on"><svg viewBox="0 0 24 24" class="ico"><rect x="3" y="11" width="18" height="9" rx="2"/><path d="M7 11V4h10v7M7 15h2M11 15h2M15 15h2"/></svg>POS</div>
+        <div class="grp">MANAGE</div>
+        <div class="nav"><svg viewBox="0 0 24 24" class="ico"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/></svg>Inventory</div>
+        <div class="nav"><svg viewBox="0 0 24 24" class="ico"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Reservations</div>
+        <div class="nav"><svg viewBox="0 0 24 24" class="ico"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Staff</div>
+        <div class="grp">REVIEW</div>
+        <div class="nav"><svg viewBox="0 0 24 24" class="ico"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2Z"/><path d="M9 8h6M9 12h6"/></svg>Sales</div>
+        <div class="nav"><svg viewBox="0 0 24 24" class="ico"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>Reports</div>
+        <div class="nav"><svg viewBox="0 0 24 24" class="ico"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 13h2M3 10h18"/></svg>Money</div>
+        <div class="nav"><svg viewBox="0 0 24 24" class="ico"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.6c2.4.6 4 2.4 4 5.4"/></svg>Customers</div>
+        <div class="me"><div class="av">AN</div><div style="font-size:13px;line-height:1.3"><b style="font-weight:600">Ana</b><br><span style="color:var(--muted);font-size:12px">Owner</span></div></div>
+      </aside>
+
+      <main class="pos">
+        <h2>POS</h2>
+        <div class="sub">6 items · 5 in stock</div>
+        <div class="bar">
+          <div class="search"><svg width="16" height="16" viewBox="0 0 24 24" class="ico"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>Search items</div>
+          <div class="chip on">All</div><div class="chip">T-Shirt</div><div class="chip">Skirt</div><div class="chip">Blouse</div><div class="chip">Shorts</div>
+        </div>
+        <div class="grid">
+          <div class="card"><div class="ph" style="background:#e8ede8"><span class="qty">×1</span><svg><use href="#midi"/></svg></div><div class="info"><div class="nm">Pleated Midi Skirt</div><div class="row"><span class="price">₱450.00</span><span class="left">5 left</span></div></div></div>
+          <div class="card"><div class="ph" style="background:#efe9e1"><span class="qty">×1</span><svg><use href="#tee"/></svg></div><div class="info"><div class="nm">Basic Tee</div><div class="row"><span class="price">₱199.00</span><span class="left low">1 left</span></div></div></div>
+          <div class="card"><div class="ph" style="background:#e9ebef"><svg><use href="#wrap"/></svg></div><div class="info"><div class="nm">Linen Wrap Skirt</div><div class="row"><span class="price">₱520.00</span><span class="left">9 left</span></div></div></div>
+          <div class="card"><div class="ph" style="background:#ecebe6"><svg><use href="#band"/></svg></div><div class="info"><div class="nm">Vintage Band Tee</div><div class="row"><span class="price">₱350.00</span><span class="left low">3 left</span></div></div></div>
+          <div class="card"><div class="ph" style="background:#f1e6e4"><span class="sale">SALE</span><span class="qty">×1</span><svg><use href="#blouse"/></svg></div><div class="info"><div class="nm">Floral Wrap Blouse</div><div class="row"><span class="price">₱320.00<s>₱380</s></span><span class="left">5 left</span></div></div></div>
+          <div class="card soldout"><div class="ph" style="background:#e6eaee"><svg><use href="#mini"/></svg></div><div class="info"><div class="nm">Denim Mini Skirt</div><div class="row"><span class="price">₱420.00</span><span class="left out">Sold out</span></div></div></div>
+        </div>
+      </main>
+
+      <section class="cart">
+        <h3>CURRENT SALE <span>Clear</span></h3>
+        <div class="sub" style="margin:4px 0 10px">3 items</div>
+        <div class="line"><div>Pleated Midi Skirt<small>₱450.00 each</small></div><div class="step"><span>−</span>1<span>+</span></div><div class="amt">₱450.00</div></div>
+        <div class="line"><div>Basic Tee<small>₱199.00 each</small></div><div class="step"><span>−</span>1<span>+</span></div><div class="amt">₱199.00</div></div>
+        <div class="line"><div>Floral Wrap Blouse<small style="color:var(--accent)">On sale · was ₱380</small></div><div class="step"><span>−</span>1<span>+</span></div><div class="amt">₱320.00</div></div>
+        <div class="total"><span>Total</span><b>₱969.00</b></div>
+        <div class="paid">COMPLETE SALE · PAID BY</div>
+        <div class="pay">
+          <div><svg viewBox="0 0 24 24" class="ico"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>CASH</div>
+          <div><svg viewBox="0 0 24 24" class="ico"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3M21 14v7h-4M14 21v-3"/></svg>GCASH</div>
+          <div><svg viewBox="0 0 24 24" class="ico"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3M21 14v7h-4M14 21v-3"/></svg>MAYA</div>
+          <div><svg viewBox="0 0 24 24" class="ico"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>CARD</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- owner iPhone app -->
+  <div class="phone"><div class="screen">
+    <div class="island"></div>
+    <div class="status"><span>9:41</span><span class="r">
+      <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.5 5.6 8.9a3.4 3.4 0 0 1 4.8 0Z"/><path d="M3.4 6.7a6.6 6.6 0 0 1 9.2 0l-1.3 1.3a4.8 4.8 0 0 0-6.6 0Z"/><path d="M1.2 4.5a9.7 9.7 0 0 1 13.6 0l-1.3 1.3a7.9 7.9 0 0 0-11 0Z"/></svg>
+      <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="9" rx="2"/><path d="M25 4.5v4a2 2 0 0 0 0-4Z" opacity=".4"/></svg>
+    </span></div>
+    <div class="content">
+      <h1>Today</h1>
+      <div class="date"><span>Saturday, September 26</span><span class="pill"><svg width="12" height="12" viewBox="0 0 24 24" class="ico" stroke-width="2.4"><path d="m5 12 5 5 9-10"/></svg>Up to date · 6:42 PM</span></div>
+      <div class="hero">
+        <div class="l">Sales today</div>
+        <div class="big">₱2,711</div>
+        <div class="vs"><span class="up">↗ 202%</span>vs last Saturday · ₱897</div>
+        <div class="bars">
+          <div><i style="height:9px"></i>S</div><div><i style="height:15px"></i>M</div><div><i style="height:7px"></i>T</div>
+          <div><i style="height:10px"></i>W</div><div><i style="height:12px"></i>T</div><div><i style="height:36px"></i>F</div><div><i style="height:84px"></i>S</div>
+        </div>
+      </div>
+      <div class="stats">
+        <div>Gross profit<b>₱1,689</b><em>↑ 250%</em></div>
+        <div>Sales made<b>5</b><em>↑ 400%</em></div>
+        <div>Pieces sold<b>9</b><em>↑ 200%</em></div>
+      </div>
+      <h4>Needs attention</h4>
+      <div class="list">
+        <div class="it"><span class="dot" style="background:#f6e1df;color:var(--danger)"><svg width="18" height="18" viewBox="0 0 24 24" class="ico"><path d="M6 6l12 12M18 6 6 18"/></svg></span><div><b>1 item sold out</b><small>Denim Mini Skirt</small></div></div>
+        <div class="it"><span class="dot" style="background:#f3ead9;color:var(--warning)"><svg width="18" height="18" viewBox="0 0 24 24" class="ico"><path d="M12 3 2 20h20Z"/><path d="M12 10v4M12 17h.01"/></svg></span><div><b>3 items low on stock</b><small>Vintage Band Tee (3), Basic Tee (1)…</small></div></div>
+        <div class="it"><span class="dot" style="background:#e0ebe3;color:var(--success)"><svg width="18" height="18" viewBox="0 0 24 24" class="ico"><path d="M6 8h12l-1 12H7Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></span><div><b>1 pickup due today</b><small>Bea M. · Linen Wrap Skirt</small></div></div>
+      </div>
+    </div>
+    <nav class="tabbar">
+      <div class="tab on"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path class="ico" d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Today</div>
+      <div class="tab"><svg viewBox="0 0 24 24" class="ico"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>Sales</div>
+      <div class="tab"><svg viewBox="0 0 24 24" class="ico"><path d="M12 2H4v8l10 10 8-8Z"/><circle cx="8" cy="6" r="1.2"/></svg>Stock</div>
+      <div class="tab"><svg viewBox="0 0 24 24" class="ico"><circle cx="12" cy="12" r="10"/><path d="M15.5 8.5c-.6-1-1.8-1.5-3.5-1.5-2 0-3.3 1-3.3 2.5 0 3.5 7 2 7 5.5 0 1.5-1.5 2.5-3.7 2.5-1.7 0-3-.6-3.6-1.7M12 5v2M12 17v2"/></svg>Money</div>
+      <div class="tab"><svg viewBox="0 0 24 24" class="ico"><circle cx="12" cy="12" r="10"/><circle cx="7.5" cy="12" r=".6"/><circle cx="12" cy="12" r=".6"/><circle cx="16.5" cy="12" r=".6"/></svg>More</div>
+    </nav>
+    <div class="home-ind"></div>
+  </div></div>
+
+  <div class="caps">
+    <div class="cap"><span class="n">01</span><b>Shop computer</b>Rings up sales, receives stock lots and keeps the books. Works offline.</div>
+    <div class="cap"><span class="n">02</span><b>Owner app</b>iOS 26 style, read-only. Today, Sales, Stock and Money, synced live.</div>
+  </div>
+</div>
+</body></html>
